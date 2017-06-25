@@ -1,0 +1,109 @@
+1)Linux启动大致过程？
+
+	加载BIOS–>读取MBR–>Boot Loader–>加载内核–>用户层init依据inittab文件来设定系统运行的等级(一般3或者5，3是多用户命令行，5是界面)–>init进程执行rc.syninit–>启动内核模块–>执行不同级别运行的脚本程序–>执行/etc/rc.d/rc.local(本地运行服务)–>执行/bin/login,就可以登录了。
+
+2)Linux系统是由那些部分组成？
+	Linux系统内核，shell，文件系统和应用程序四部分组成。
+
+3)apache有几种工作模式，分别简述两种工作模式及其优缺点？
+
+apache主要有两种工作模式：
+prefork(apache的默认安装模式)和worker(可以在编译的时候添加--with-mpm=worker选项)
+prefork的特点是：(预派生)
+	1.这种模式可以不必在请求到来时再产生新的进程，从而减小了系统开销
+	2.可以防止意外的内存泄漏
+	3.在服务器负载下降的时候会自动减少子进程数
+
+worker的特点是：
+	支持混合的多线程多进程的多路处理模块
+	如果对于一个高流量的HTTP服务器，worker MPM是一个比较好的选择，因为worker MPM占用的内存要比prefork要小。
+
+4）LVS三种模式的工作过程？
+NAT (Network Address Translation)模式。
+LB收到用户请求包后，LB将请求包中虚拟服务器的IP地址转换为某个选定RS的IP地址，转发给RS；RS将应答包发给 LB，LB将应答包中RS的IP转为虚拟服务器的IP地址，回送给用户。
+
+IP隧道 (IP Tunneling)模式。
+LB收到用户请求包后，根据IP隧道协议封装该包，然后传给某个选定的RS；RS解出请求信息，直接将应答内容传给用户。此时要求RS和LB都要支持IP隧道协议。
+
+DR(Direct Routing)模式。
+LB收到请求包后，将请求包中目标MAC地址转换为某个选定RS的MAC地址后将包转发出去，RS收到请求包后 ,可直接将应答内容传给用户。此时要求LB和所有RS都必须在一个物理段内,且LB与RS群共享一个虚拟IP。
+
+
+5）列出linux常见打包工具并写相应解压缩参数(至少三种)？
+
+	tar命令就是打包工具，对应的解压缩参数 tar -cvf、 tar -zcvf、 tar -jcvf是对应拆包解压什么文件的要对应记住，不要记混。
+
+6）一个EXT3的文件分区，当用touch新建文件时报错，错误信息是磁盘已满，但是使用df -H查看分区信息时只使用了50%，请分析具体原因？
+答：
+	两种情况，
+		一种是磁盘配额问题
+		另外一种就是EXT3文件系统的设计不适合很多小文件跟大文件的一种文件格式,出现很多小文件时，容易导致inode耗尽了。
+
+7）请使用Linux系统命令统计出establish状态的连接数有多少?
+	netstat -an |grep ESTABLISHED |wc -l
+
+
+8)统计出一台web server上的各个状态（ESTABLISHED/SYN_SENT/SYN_RECV等）的个数？
+	netstat -antl|grep ESTABLISTHED|wc -l
+	netstat -antl|grep SYN_SENT|wc -l
+	netstat -antl|grep SYN_RECV|wc -l
+
+9)查找/usr/local/apache/logs目录最后修改时间大于30天的文件并删除
+	find /usr/local/apache/logs -type f -mtime +30 -ok rm {} \;
+
+10)编写个shell脚本将/usr/local/test 目录下大于100K的文件转移到/tmp目录
+
+touch AAA.sh
+#!/bin/bash
+find /usr/local/test/ -size +100K -exec mv {} /tmp \;
+
+11)添加一条到192.168.3.0/24的路由，网关为192.168.1.254？
+	route add  -net 192.168.3.0 netmask 255.255.255.0 gw 192.168.1.254  
+	或者 
+	route add -net 192.168.3.0/24 gw 192.168.1.254
+	注意:route命令是临时性的增加路由，如果需要永久性的添加路由，方法一，#vim etc/rc.local，在文件里加上 route add -net 192.168.3.0/24 gw 192.168.1.254。方法二，#vim etc/sysconfig/network 在后面加上GATEWAY=192.168.1.254,用这个方法来增加网关。然后# route -n检查一下。
+
+
+12)在每周6的凌晨3:15执行/home/shell/collect.pl，并将标准输出和标准错误输出到/dev/null设备，请写出crontab中的语句？
+	15 3 * * 6 sh /home/shell/collect.pl  > /dev/null  2>&1  
+
+13)在11月份内，每天的早上6点到12点中，每隔2小时执行一次/usr/bin/httpd.sh 怎么实现 ?
+	crontab -e
+	1 6-12/2 * 11 *  bash /usr/bin/httpd.sh
+
+注意:crontab、at这种计划任务命令也是面试高频题目，crontab一共有5个*，分别表示“分钟”、“小时”，“日期”、“月份”、“星期几”。基本的结构要明白，而且“当大数有条件，小数任意”的情况下，小数不要用*，用0or 1，如果这道题写成“* 6-12/2 * 11 * bash /usr/bin/httpd.sh”，你的apache会很爽，它会在满足条件的情况下每一分钟都启动一下。
+
+
+14)匹配AAA文本中的key并打印出该行及下面的5行？
+grep -A 5 key AAA
+
+15)查询AAA文件里以abc结尾的行？
+grep "abc$" AAA
+
+16)打印出AAA文件第1到第3行？
+head -3 AAA
+sed -n '1,3p' AAA
+
+17)查询AAA里面空行的所在行号？
+
+grep -n "^$" AAA
+
+18)利用sed命令将test.txt中所有的回车替换成空格？
+
+sed -e "s/\n/ /g" test.txt
+
+19)使用ab命令进行100000次请求，同时每秒40次并发的频率访问http://www.123.com/AAA.txt
+
+ab -n 100000 -c 40 http://www.123.com/AAA.txt
+
+
+20)按照以下要求配置一个防火墙规则
+1.对所有地址开放本服务器的80端口、22端口、10~21端口。
+2.其他机器可以用ping命令来探测本服务器的链接情况
+3.其他没有被准许的端口将禁止访问
+
+	iptables -I INPUT -p tcp -dport 80 -j ACCEPT
+	iptables -I INPUT -p tcp -dport 22 -j ACCEPT
+	iptables -I INPUT -P tcp -dport 10:21 -i ACCEPT
+	iptables -I INPUT -p icmp -j ACCEPT
+	iptables -I INPUT -j REJECT

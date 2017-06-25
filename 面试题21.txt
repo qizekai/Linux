@@ -1,0 +1,261 @@
+1. 建立动态路由需要用到的文件有（）
+
+A /etc/hosts
+B /etc/gateways
+C /etc/resolv、conf
+
+2. 以下哪些命令可以查看当前系统的启动时间（）
+
+A w
+B top
+C ps
+D uptime
+
+3. 在退出unix系统账户之后还需要继续运行某个进程，那么可用（）
+
+A awk
+B sed
+C crontab
+D nohup
+
+4. 为了将当前目录下的归档文件myftp. tgz解压缩到/tmp目录下，用户可以使用命令
+
+A tar xvzf myftp. tgz –C /tmp
+B tar xvzf myftp. tgz –R /tmp
+C tar vzf myftp. tgz –X /tmp
+D tar xvzf myftp. tgz /tmp
+
+5. 在unix系统下执行chmod(“/usr/test/sample”,0753)之后该文件sample的访问权限为
+
+A 拥有者可读写执行，同组用户可写可执行，其他用户可读可执行
+B 拥有者可读写执行，同组用户可读写，其他用户可读可执行
+C 拥有者可读写执行，同组用户可读可执行，其他用户可写可执行
+D 拥有者可读写执行，同组用户可读可执行，其他用户可读写
+
+6.（）不能用于Linux中的进程通信
+
+A 共享内存
+B 命名管道
+C 信号量
+D 临界区
+
+7. 当内网内没有条件建立dns服务器，又不想用IP访问网站，应配置什么文件
+
+A hosts
+B sysconfig
+C network
+D hostname
+
+8. 下面有关linux查看系统负载的命令，说法错误的是？
+
+A uptime命令主要用于获取主机运行时间和查询linux系统负载等信息
+B vmstat命令可以查看查看cpu负载
+C sar命令可以查看网络接口信息
+D free命令可以查看磁盘负载情况
+
+9. 以下哪些方式/命令不可以查看某IP是否可达？
+
+A telnet
+B ping
+C tracert
+D top
+
+10. 目录在linux文件系统中是以怎样的形式存在的？
+
+A 文件夹
+B 文件
+C inode
+D 软链接
+
+11. tar命令用于解压的参数是？
+
+A -v
+B -x
+C -c
+D -f
+
+12. 下面哪个命令不是用来查看网络故障？
+
+A telnet
+B ping
+C init
+D netstat
+
+13. Samba 服务器的配置文件是
+
+A httpd.conf
+B inetd.conf
+C rc.samba
+D smb.conf
+
+14. 下面关于系统调用的描述中,错误的是()
+
+A 系统调用把应用程序的请求传输给系统内核执行
+B 系统调用中被调用的过程运行在”用户态”中
+C 利用系统调用能够得到操作系统提供的多种服务
+D 是操作系统提供给编程人员的接口
+E 系统调用给用户屏蔽了设备访问的细节
+F 系统调用保护了一些只能在内核模式执行的操作指令
+
+15. 哪个变量用来指定一个远程X应用程序将输出放到哪个X server上
+
+A TERM
+B DISPLAY
+C ECHO
+D OUTPUT
+
+16. Linux文件权限一共10位长度，分成四段，第三段表示的内容是 ( )。
+
+A 文件类型
+B 文件所有者的权限
+C 文件所有者所在组的权限
+D 其他用户的权限
+
+17. 你通过编辑/etc/group文件来改变了sales group的GID，所有的组员都能成功的进行的转换，除了Jack，他甚至都无法登陆，其原因是什么？
+
+A Jack忘记了 group密码
+B Jack需要再次被加入到group
+C 在/etc/passwd里指明了Jack的GID
+D Jack的账号需要被删除然后新建
+
+18. 在UNIX操作系统中,若用户键入的命令参数的个数为1时,执行cat$1命令:若用户键入的命令个数为2时,执行cat>>$2<$1命令,请将下面所示的shell程序的空缺部分补齐
+
+case (___) in
+1)cat $1
+2)cat>>$2<$1
+*)echo ‘defult…’
+case
+
+A $#
+B $@
+C $$
+D $*
+
+19. 在/etc/fstab文件中指定的文件系统加载参数中， 参数一般用于CD-ROM等移动设备。
+
+A defaults
+B sw
+C rw和ro
+D noauto
+
+20. 以下函数中，和其他函数不属于一类的是____。
+
+A read
+B pread
+C write
+D pwrite
+E fseek
+F lseek
+
+21. 运行在多核处理器上的Linux环境中,若临界区非常短,且不允许线程上下文切换的情况下,使用下列哪种机制满足上述需求并且性能最好?
+
+A SpinLock
+B Mutex
+C Semaphore
+D Condition variable
+
+22. （多选）Linux 创建文件的命令有（）
+
+A ls
+B touch
+C cat
+D vi/vim
+E >
+
+23. （多选）Linux的非root用户，在自己的目录中，不可以删除非空目录dirs的方法是：
+
+A rm dir dirs
+B rm -r dirs
+C mv dirs /dev/null
+D destroy dirs
+
+24. （多选）下述是Linux下多线程编程常用的pthread库提供的函数名和意义，说法正确的有？
+
+A pthread_create 创建一个线程
+B pthread_join用来等待一个线程的结束
+C pthread_mutex_init 初始化一个线程互斥锁
+D pthread_exit结束一个线程
+
+25. （多选）Linux 2.6.* 内核默认支持的文件系统有哪些？
+
+A ext3
+B ext2
+C ext4
+D xfs
+E ufs
+
+26. （多选）将文件file1复制为file2可以用下面哪些命令（）
+
+A cp file1 file2
+B cat file1 >file2
+C cat < file1 >file2
+D dd if=file1 of=file2
+E cat file1 | cat >file2
+
+27. （多选）下列关于makefile描述正确的有？
+
+A makefile文件保存了编译器和连接器的参数选项
+B 主要包含了五个东西：显式规则、隐晦规则、变量定义、文件指示和注释
+C 默认的情况下，make命令会在当前目录下按顺序找寻文件名为“GNUmakefile”、“makefile”、“Makefile”的文件， 找到了解释这个文件
+D 在Makefile不可以使用include关键字把别的Makefile包含进来
+
+28. （多选）文件aaa的访问权限为rw-r–r–,现要增加所有用户的执行权限和同组用户的写权限，下列哪些命令是正确的？
+
+A chmod a+x , g+w aaa
+B chmod 764 aaa
+C chmod 775 aaa
+D chmod o+x , g+w aaa
+
+29. （多选）UNIX系统中进程由三部分组成：进程控制块，正文段和数据段。这意味着一个程序的正文与数据可以是分开的，这种分开的目的是为了？
+
+A 可共享正文
+B 可共享数据
+C 可重入
+D 方便编程
+E 以上全部
+
+30. （多选）命令
+subnet 166.173.197.131 netmask 255.255.255.192{
+range 166.173.197.10 166.173.197.107;
+default-lease-time 600;
+max-lease-time 7200;
+}
+表示？（）
+
+A 向166.173.197.10网络分配从166.173.197.133到166.173.197.255
+B 一个两小时的最大租用时间
+C 指定了一个十分钟的缺省租用时间
+D 网络地址166.173.197.0
+
+答案如下：
+
+1. B
+2. D
+3. D
+4. A
+5. C
+6. D
+7. A
+8. D
+9. D
+10. B
+11. B
+12. C
+13. D
+14. B
+15. B
+16. C
+17. C
+18. A
+19. D
+20. E
+21. A
+22. BCDE
+23. ACD
+24. ABCD
+25. ABCD
+26. ABCDE
+27. ABC
+28. AC
+29. ABC
+30. BC

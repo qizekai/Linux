@@ -1,0 +1,98 @@
+							360面试题
+
+1、写一个脚本查找最后创建时间是3天前，后缀是*.log的文件并删除。
+	find / -name "*.log" -ctime +3 -exec rm -f {} \;
+2、写一个脚本将某目录下大于100k的文件移动至/tmp下。
+	方法一:
+		for i in `find /test -type f -size +100k`;do cd /test && mv $i /tmp;done
+	方法二:
+		find  /usr/local/test/ -type f -size +100k | xargs mv {} /tmp
+
+3、写一个脚本将数据库备份并打包至远程服务器192.168.1.1 /backup目录下。
+
+mount 192.168.1.1:/backup /mnt
+cd /mnt
+/usr/local/mysql/bin/mysqldump -hlocalhost -uroot --all-databases >test.sql
+tar czf test.sql.tar.gz test.sql
+rm -f test.sql
+
+
+4、写一个防火墙配置脚本，只允许远程主机访问本机的80端口。
+
+iptables -P INPUT ACCEPT
+iptables -P OUTPUT ACCEPT
+iptables -P FORWARD ACCEPT
+iptables -F
+iptables -X
+iptables -A INPUT -i eth0 -p tcp --dport 80 -j ACCEPT
+iptables -P INPUT DROP
+
+5、写一个脚本进行nginx日志统计，得到访问ip最多的前10个(nginx日志路径：/home/logs/nginx/default/access.log)。
+	cat access.logok |awk '{print $1}'|sort -n|uniq -c|sort -nr |head -10
+
+6、写出下列命令的含义
+（1）MaxKeepAliveRequests    100   
+
+	一次连接可以进行的HTTP请求的最大请求次数,将其值设为0将支持在一次连接内进行无限次的传输请求。事实上没有客户程序在一次连接中请求太多的页面，通常达不到这个上限就完成连接了  
+
+（2）Options FollowSymLinks    
+        Order Deny Allow
+        Deny from all
+        Allow from 192.168.1.1
+
+允许FollowSymLinks表示允许在此目录使用符号连接
+黑名单限制全部,仅允许192.168.1.1的请求
+
+
+7、写一个脚本把指定文件里的/usr/local替换为别的目录。
+	sed -i.bak 's@/usr/local@/tmp@g' file
+	
+8、请简单阐述运维工程师的职责。
+
+1.操作系统状态监控
+2.操作系统故障排除
+3.配置变更
+4.数据备份
+5.部署环境
+
+
+出现几率比较高的：
+1、简要描述Linux的启动过程？
+	1).加载BIOS的硬件信息，获取第一个启动设备
+	2).读取第一个启动设备MBR的引导加载程序(grub)的启动信息
+	3).加载核心操作系统的核心信息，核心开始解压缩，并尝试驱动所有的硬件设备
+	4).核心执行init程序，并获取默认的运行信息
+	5).init程序执行/etc/rc.d/rc.sysinit文件
+	6).启动核心的外挂模块
+	7).init执行运行的各个批处理文件(scripts)
+	8).init执行/etc/rc.d/rc.local
+	9).执行/bin/login程序，等待用户登录
+	10).登录之后开始以Shell控制主机
+
+2、简要叙述下列端口所运行的服务
+21、22、23、25、110、143、873、3306    
+
+21 ftp
+22 ssh
+23 telnet
+25 smtp
+110 pop3
+143 IMAP协议
+873 rsync
+3306 mysql
+
+3、TCP断头最小长度是__64_字节？
+4、让某普通用户能进行cp /dir1/file1 /dir2的命令时，请说明dir1 file1最小具有什么权限？
+	rx
+5、简述TCP三次握手的过程？
+（1）第一次握手
+         客户端发送一个TCP的SYN标志位置1的包，指明客户打算连接的服务器的端口，以及初始序号X, 保存在包头的
+         序列号(Sequence Number)字段里。
+（2）第二次握手
+         服务器发回确认包(ACK)应答。即SYN标志位和ACK标志位均为1同时，将确认序号(Acknowledgement Number)
+         设置为客户的I S N加1以.即X+1。
+（3）第三次握手
+        客户端再次发送确认包(ACK) SYN标志位为0,ACK标志位为1.并且把服务器发来ACK的序号字段+1,放在确定字段
+        中发送给对方.并且在数据段放写ISN的+1
+
+

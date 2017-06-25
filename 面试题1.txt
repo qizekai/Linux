@@ -1,0 +1,198 @@
+1.如何查看http的并发数量于Tcp连接状态
+	netstat  -n | awk '/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}'
+2.修改linux系统打开文件的数量
+	方法1:
+		ulimit -n 数量
+	方法2:
+		vim /etc/security/limits.conf
+		soft nofile 10240
+		hard nofile 10240
+3.如何用tcpdump嗅探80端口的访问看看谁最高？
+tcpdump -i eth0 -tnn dst port 80 -c 1000 | awk -F"." '{print $1"."$2"."$3"."$4".""}' | sort |uniq -c | sort -nr | head-5
+
+4.如何查看/var/log目录下的文件数？
+	ls /var/log/|wc -l
+	ls /var/log/*/|wc -l
+
+5.如何查看Linux系统每个ip的连接数？
+	netstat -n|awk '/^tcp/ {print $5}'|awk -F: '{print $1 }'|sort|uniq -c
+
+6.shell下自动生成32位随机密码
+	cat /dev/urandom | head -1 | md5sum | head -c 32 >> /pass
+
+7.统计apache和nginx服务器中访问量最多的5个ip
+cat access.log | awk '{print $1}' | sort | uniq -c | sort -nr | head -5
+
+8.、如何查看二进制文件的内容？
+我们一般通过hexdump命令 来查看二进制文件的内容。
+hexdump -C XXX(文件名) -C是参数 不同的参数有不同的意义
+-C 是比较规范的 十六进制和ASCII码显示
+-c 是单字节字符显示
+-b 单字节八进制显示
+-o 是双字节八进制显示
+-d 是双字节十进制显示
+-x 是双字节十六进制显示
+
+9.ps aux 中的VSZ代表什么意思，RSS代表什么意思？
+VSZ:虚拟内存集,进程占用的虚拟内存空间
+RSS:物理内存集,进程战用实际物理内存空间
+
+10、如何检测并修复/dev/hda5？
+fsck用来检查和维护不一致的文件系统。若系统掉电或磁盘发生问题，可利用fsck命令对文件系统进行检查
+
+11、介绍下Linux系统的开机启动顺序
+加载BIOS–>读取MBR–>Boot Loader–>加载内核–>用户层init一句inittab文件来设定系统运行的等级(一般3或者
+5，3是多用户命令行，5是界面)–>init进程执行rc.syninit–>启动内核模块–>执行不同级别运行的脚本程序–>执行/etc/rc.d/rc.local(本地运行服务)–>执行/bin/login,就可以登录了。
+
+12、符号链接与硬链接的区别
+我们可以把符号链接，也就是软连接 当做是 windows系统里的 快捷方式。
+硬链接 就好像是 又复制了一份，举例说明：
+ln 3.txt 4.txt 这是硬链接，相当于复制，不可以跨分区，但修改3,4会跟着变，若删除3,4不受任何影响。
+ln -s 3.txt 4.txt 这是软连接，相当于快捷方式。修改4,3也会跟着变，若删除3,4就坏掉了。不可以用了。
+
+13、保存当前磁盘分区的分区表
+dd 命令是以个强大的命令，在复制的同时进行转换
+dd if=/dev/sda of=./mbr.txt bs=1 count=512
+
+14、如何在文本里面进行复制、粘贴，删除行，删除全部，按行查找和按字母查找？
+以下操作全部在命令行状态操作，不要在编辑状态操作。
+
+在文本里 移动到想要复制的行 按yy 想复制到哪就移动到哪，然后按P 就黏贴了
+删除行 移动到改行 按dd
+删除全部 dG 这里注意G一定要大写
+按行查找 :90 这样就是找到第90行
+按字母查找 /path 这样就是 找到path这个单词所在的位置，文本里可能存在多个,多次查找会显示在不同的位置。
+
+15、手动安装grub
+	grub-install /dev/sda
+
+16、修改内核参数
+	vi /etc/sysctl.conf 这里修改参数
+	sysctl -p 刷新后可用
+
+17、在1-39内取随机数
+	expr $[RANDOM%39] + 1
+	RANDOM随机数
+	%39取余数范围0-38
+
+18、限制apache每秒新建连接数为1,峰值为3
+每秒新建连接数,一般都是由防火墙来做,apache本身好像无法设置每秒新建连接数,只能设置最大连接：
+iptables -A INPUT -d 172.16.100.1 -p tcp --dport 80 -m limit --limit 1/second  --limit-burst 3 -j ACCEPT
+
+
+19、FTP的主动模式和被动模式
+FTP协议有两种工作方式：PORT方式和PASV方式，中文意思为主动式和被动式。
+
+PORT（主动）方式的连接过程是:
+	客户端向服务器的FTP端口（默认是21）发送连接请求
+	服务器接受连接,建立一条命令链路。
+	当需要传送数据时，客户端在命令链路上用PORT 命令告诉服务器：“我打开了XX端口，你过来连接我”。于是服务器从20端口向客户端的 XX端口发送连接请求，建立一条数据链路来传送数据。
+
+PASV（被动）方式的连接过程是：客户端向服务器的FTP端口（默认是21）发送连接请求
+	服务器接受连接,建立一条命令链路。
+	当需要传送数据时,服务器在命令链路上用PASV 命令告诉客户端：“我打开了XX端口，你过来连接我”。于是客户端向服务器的XX端口 发送连接请求,建立一条数据链路来传送数据。
+	从上面可以看出,两种方式的命令链路连接方法是一样的,而数据链路的建立方法就完全不同。
+
+20、显示/etc/inittab中以#开头，且后面跟了一个或者多个空白字符，而后又跟了任意非空白字符的行
+	 grep "^\#[[:space:]]\{1,\}.\{1,\}" /etc/inittab
+
+21、显示/etc/inittab中包含了:一个数字:(即两个冒号中间一个数字)的行
+	grep "\:[0-9]\{1\}:" /etc/inittab
+
+22、怎么把脚本添加到系统服务里，即用service来调用？
+	vim /etc/init.d/mysqld
+	chmod +x /etc/init.d/mysqld
+	chkconfig --add mysqld
+	chkconfig mysqld on
+
+
+23、写一个脚本，实现批量添加20个用户，用户名为user01-20，密码为user后面跟5个随机字符
+
+#!/bin/bash
+#description: useradd
+for i in `seq -f "%02g" 1 20`;do
+	useradd user$i
+	echo "user$i-`echo $RANDOM|md5sum|cut -c 1-5`"|passwd –stdinuser$i >/dev/null 2>&1
+done
+
+24、写一个脚本，实现判断192.168.1.0/24网络里，当前在线的IP有哪些，能ping通则认为在线
+
+#!/bin/bash
+for ip in `seq 1 255`
+do
+ping -c 1 192.168.1.$ip > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+	echo 192.168.1.$ip UP
+else
+	echo 192.168.1.$ip DOWN
+fi
+done
+
+
+25、写一个脚本，判断一个指定的脚本是否是语法错误；
+如果有错误,则提醒用户键入Q或者q无视错误并退出其它任何键可以通过vim打开这个指定的脚本
+
+[root@localhost tmp]# cat checksh.sh
+#!/bin/bash
+read -p "please input check script-> " file
+if [ -f $file ]; then
+	bash -n $file > /dev/null 2>&1
+	if [ $? -ne 0 ]; then
+	read -p "You input $file syntax error,[Type q to exit or Type vim to edit]" answer
+	case $answer in
+		q | Q)
+			exit 0
+			;;
+		vim )
+			vim $file
+			;;
+		*)
+			exit 0
+			;;
+		esac
+	fi
+else
+	echo "$file not exist"
+	exit 1
+fi
+
+26、写一个脚本，要求如何：
+
+创建一个函数，能接受两个参数：
+1)第一个参数为URL，即可下载的文件；第二个参数为目录，即下载后保存的位置；
+2)如果用户给的目录不存在，则提示用户是否创建；如果创建就继续执行，否则，函数返回一个51的错误值给调用脚本；
+3)如果给的目录存在，则下载文件；下载命令执行结束后测试文件下载成功与否；如果成功，则返回0给调用脚本，否则，返回52给调用脚本；
+
+[root@localhost tmp]# cat downfile.sh
+#!/bin/bash
+url=$1
+dir=$2
+download()
+{
+cd $dir >> /dev/null 2>&1
+if [ $? -ne 0 ];then
+	read -p "$dir No such file or directory,create?(y/n)" answer
+	if [ "$answer" == "y" ];then
+		mkdir -p $dir
+		cd $dir
+		wget $url 1> /dev/null 2>&1
+	else
+		return '51'
+	fi
+fi
+
+if [ $? -ne 0 ]; then
+	return '52'
+fi
+
+}
+	download $url $dir
+	echo $?
+
+
+
+27、如何让history命令显示具体时间？
+HISTTIMEFORMAT=”%Y-%m-%d %H:%M:%S”
+export HISTTIMEFORMAT
+重新开机后会还原，可以写/etc/profile
+

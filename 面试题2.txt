@@ -1,0 +1,89 @@
+如果您对问题有疑问，或者认为答案不准确的，欢迎留言交流。
+
+1、如何过滤出已知当前目录下oldboy中的所有一级目录(不包含子目录，即只能是一级目录)
+
+方法1：find ./ -type d -maxdepth 1
+方法2：ls -F
+方法3：ls -l  | grep ^d
+方法4：ls -F | grep /$
+方法5：ls -l | grep -v ^-
+方法6：tree -L 1 /
+方法7：根据颜色来区分文件和目录
+方法8：ls -l | sed -n /^d/p
+
+2、一个目录中有很多文件(ls查看时好多屏)，想最快速度查看到最近更新的文件，如何看？
+
+ls -lrt  /etc #最底部的就是最新更新的文件
+参数说明：
+-r, –reverse #翻转排序
+-t #按照修改时间排序
+
+3、已知apache服务的访问日志按天记录在服务器本地目录/app/logs下，由于磁盘空间紧张，现在要求只能保留最近7天访问日志！请问如何解决？
+
+办法或配置或处理命令(提示：可以从apache服务配置上着手，也可以从生成出来的日志上着手)
+1>.服务自身的功能实现
+2>.手动删除
+find ./ -mtime +7 -type f -name "*.log" -exec rm -f {} \; #查找7天以前的日志并删除之
+
+
+4、打印配置文件nginx.conf内容的行号及内容，该如何做？
+
+方法1：cat -n nginx.conf
+方法2：less -N nginx.conf
+方法3：grep -n . nginx.conf #此处的.(点)号，表示任意单个字符，-n是给过滤出的每一行加行号
+
+5、如何迅速返回到上一次的目录？
+
+cd –    
+#环境变量OLDPWD始终记录着上一次的位置
+
+6、调试系统服务时，希望能实时查看系统日志/var/log/messages的更新，如何做？
+
+方法1：tail -f /var/log/messages
+方法2：tail -F /var/log/messages #和-f相比多个重试的功能，就是文件不存在了，会不断尝试
+
+7、安装完系统(CentOS/RHEL)后，希望让网络文件共享服务NFS,仅在3级别上开机自启该如何做？
+
+chkconfig –level 3 nfs off
+
+8、如何查看/etc/services文件有多少行？
+
+方法1：直接使用命令wc
+wc -l  /etc/services
+
+方法2：给文件内容加行号
+cat -n  /etc/services | tail -1
+
+方法3：sed  -n  '$='  /etc/services
+
+方法4：grep -n $ /etc/services | tail -1
+
+9、请过滤出ifconfig中的ip地址？
+
+方法1：ifconfig eth1|grep "inet add"|cut -d':' -f2|cut -d' ' -f1
+方法2：ifconfig eth1|grep "inet addr"|awk -F: '{print $2}'|awk '{print $1}'
+方法3：ifconfig eth1|awk -F '[ :]+' 'NR==2 {print $4}'
+方法4：ifconfig eth0|sed -n '2p'|sed 's#^.*addr:##g'|sed 's# Bc.*$##g'
+
+10、如何将/etc/inittab中的权限取出来，以数字644这样的形式打印
+
+方法1：stat /etc/inittab |sed -n '4p'|awk -F "[(/]" '{print $2}'
+方法2：stat -c %a  /etc/inittab
+方法3：ll /etc/passwd |cut -c 1-9|tr rwx- 4210|awk -F "" '{print $1+$2+$3 $4+$5+$6 $7+$8+$9}'
+
+
+11、在/tools目录下的文件里面都被植入了广告链接，如何将其去除
+
+删除植入广告：
+
+sed -i ‘/<p class=”chromeframe”>You are using an outdated browser. Please <a href=”https:\/\/www.google.com\/chrome\/” rel=”external nofollow” target=”_blank”>upgrade your browser<\/a> and try again.<\/p>\//d’ kaka
+
+12、打印出kaka文件中除掉空行的内容
+
+方法1：grep -v "^$" kaka
+方法2：sed  '/^$/d' kaka
+
+13、打印3天前的日期，格式如：2016-05-06
+
+方法1：date "+%F" -d "3 day ago"
+方法2：date "+%F" -d "-3 day"

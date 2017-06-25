@@ -1,0 +1,194 @@
+1. /var/log/messages日志出现kernel:nf_conntrack:tablefull,dropping packet,请问是什么原因导致的，如何解决？
+
+此报错为iptables报错信息，连接跟踪表已满，开始丢包，可能的原因是由于频繁的连接、关闭，或者网络的一些TCP的连接导致的
+解决方法：
+1）加大跟踪表的大小
+2）禁用一些不必跟踪的连接状态
+3）禁用模块 ip_vs nf_conntect
+
+2. linux系统nginx与Php环境，发现PHP-FPM进程高，请说出可能的原因以及如何解决？
+
+1）php的插件程序与现有的PHP版本存在不兼容情况，解决方法从php.ini中禁止相关插件
+2）软件本身存在问题，需要开发协同运维一同处理，查找原因
+3）php程序存在死循环现象，使用服务器负载过高，解决方法使用top命令查看
+
+3. 磁盘报错：nospace left on device，但是df-h查看空间没有满，为什么？
+
+原因：系统inode满了，因为所有的文件的文件名信息都是存放在inode里面的，文件内容是存放在block里面
+可以使用df -i 来查看inode的使用情况
+[root@mysql-1 download]# df -i
+Filesystem Inodes IUsed IFree IUse% Mounted on
+/dev/sda2 1234576 138303 1096273 12% /
+tmpfs 60785 1 60784 1% /dev/shm
+/dev/sda1 51200 38 51162 1% /boot
+
+4. 磁盘空间满了，删除一部分nginx日志后，但是磁盘空间还是满的，为什么？
+
+删除的日志信息,一部分可能还是被进程调用,因此,需要重启nginx服务来释放进程；或者实际生产环境中使用>/log/access.log清空文件
+
+5. 如何查看apache进程数
+
+perfork模式：
+ps -ef|grep http|grep -v grep|wc -l
+
+worker模式：
+pstree -a|grep httpd|wc -l
+
+6. 提取文件test.log中FAILD与SUCCESSFUL的字符但不包括DONE的行，然后以:为隔符，提取第三列
+[root@mysql-1]# cat test.log
+FAILD:SUCCESSFUL:DONE:CRITICAL
+FAILD:SUCCESSFUL:NO:GOOD
+FAILD:NO:DO:QINGYUN
+SUCCESSFUL:DONE:CRITICAL::CRITICAL
+
+方法一：
+[root@mysql-1]# egrep “FAILD|SUCCESSFUL”test.log |grep -v DONE|awk -F ‘:’ ‘{print $3}’
+NO
+DO
+
+方法二：
+[root@mysql-1]# egrep “FAILD|SUCCESSFUL”test.log |grep -v DONE|cut -d: -f3
+NO
+DO
+
+7. 公司机房的服务器接近254台了，请你设计一个解决方案，如何划分网段，并实现业务平滑迁移。
+
+第一种方案：变长子网掩码的方法，加大IP地址的可使用范围，全网分发/etc/hosts文件
+第二种方案：增加核心交换机，在核心交换机划分VLAN，将新增的服务器加入新的VLAN中，全网分发/etc/hosts文件
+
+8. Nginx反向代理如何实现代理RS节点上的不同虚拟主机，请说出原理和配置方法或思路。
+
+客户端向反向代理发送请求，反向代理按一定的规则转发至目标服务器，并将返回的内容返回给客户端，可分为以下两种：
+
+配置内部不同服务器转发：
+upstream app1 {
+server 192.168.1.10:80 weight=5;
+server 192.168.1.11:80 weight=5;
+}
+upstream app2 {
+server 192.168.1.20:80 weight=5;
+server 192.168.1.21:80 weight=5;
+}
+配置server
+server{
+listern 80;
+server_name app.abc.com
+}
+
+配置匹配转发规则：
+location /app1/ {
+proxy_pass http://example.com/app1;
+proxy_set_header Host $host;
+}
+location/app2/ {
+proxy_passhttp://example.com/app2;
+proxy_set_header Host $host;
+}
+做为负载均衡
+配置负载均衡服务器池，也就是调度规则
+upstream test_servers {
+server 192.168.1.2:80 weight=5;
+server 192.168.1.4:80 weight=5;
+server 192.168.1.6:82 weight=15;
+}
+然后配置server标签，
+server {
+listen 80;
+server_name www.abc.com;
+proxy_pass http://test_servers;
+proxy_set_header Host $host
+}
+配置完成后，重新加载nginx服务
+
+9. 说出netstat -an命令结果中最后一列status对应的不同网络连接状态含义
+[root@ ~]# netstat -an
+Active Internet connections (servers andestablished)
+Proto Recv-Q Send-Q Local Address Foreign Address State
+tcp 0 0 0.0.0.0:22 0.0.0.0:* LISTEN
+tcp 0 0 139.24.65.45:54296 10.11.68.13:80 ESTABLISHED
+tcp 0 52 39.24.65.145:22 36.32.8.85:546 ESTABLISHED
+tcp 0 0 139.24.165.45:586 10.11.8.13:80 CLOSE_WAIT
+
+listen 服务启动后首先处于的状态（监听状态）
+established 建立连接，表示建立连接的两端可以正常通信了
+close_wait 对方主动关闭连接或网络异常而中断，因此状态会变成
+time_wait 主动断开连接，收到对方确认后的状态，相当于释放资源，可以设置些种状态的参数，也就是主动断开后，下一次再连接的时间间隔
+syn_sent 请求连接的状态，需要访问其它机器时首先发出的同步信号
+
+10. binlog是什么？binlog记录的是什么？有几种模式及优缺点，企业中选择哪种模式做同步？
+
+binlog：是用于记录所有更新了数据的操作语句，语句以事件的形式保存，它描述数据的更改过程
+作用：用于实时备份数据，数据库的主从复制
+log_bin 打开记录binlog功能
+
+binlog的查看
+mysqlbinlog /home/mysql/binlog/binlog.000003
+
+binlog的删除：可分为自动与手动删除
+自动删除
+能过binlog参数expire_logs_days来实现
+show binary logs;
+show variables like “expire_logs_days;”
+set gloable expire_logs_days=3;
+手工删除
+reset master 删除主的binlog
+reset slave 删除从的中继日志
+
+三种模式：
+Row level模式 :日志会记录每一行数据被修改的形式，然后在从端对相同的数据进行修改
+优点：可以不记录执行SQL语句上下文相关的信息，只记录哪一条数据被修改，修改成什么样了
+缺点：所有执行的语句都当记录到日志文件中，而且都会以每行记录的修改来记录，会产生大量的日志内容
+
+statement模式：每一条修改数据的SQL都会记录master的bin-log中，slave在复制的时候SQL进程会解析成和原来master端执行过的相同的SQL来执行
+优点：解决了上row level模式的缺点，不需要记录每一行数据的变化，减少日志量，可以得高性能
+缺点：由于记录的是执行语句，在此模式下会有主从无法复制的问题出现
+
+mixed自动模式：MYSQL会根据执行的每一条具体SQL语句来区分对待记录的日志格式，
+企业使用场景：
+1）如果不会用到mysql特殊的功能，基本都是默认的模式statement模式
+2）如果会到mysql的一些特殊功能，基本都是会使用row level模式
+
+11. 请详细描述http协议原理
+
+http协议：是客户端与服务端之间通信传输数据的基础，HTTP协议是基于TCP/IP协议之上的协议
+原理包括四个过程：
+连接：浏览器与服务器建立连接，打开一个socket的虚拟文件，表明连接建立成功
+请求：浏览器通过socket向服务器提交请求（一般是GET或POST请示命令）
+应答：浏览器请求提交后，通过HTTP协议传送给服务器，服务器收到后进行处理将结果又通过HTTP回传给客户端，从而在客户端显示出所请求的页面
+关闭连接：当应答结束后，浏览器与服务器之间就断开连接
+
+12. 请详细描述MySQL主从复制原理
+
+原理：主库开启binlog功能并授权从库连接主库同步的用户权限 ,将数据库的修改或变化生成bin-log日志，从库通过change mster的语句得到主库的相关信息，从库开启slave并连接主加进行相关验证，验证通过后，主库的IO线程根据从库的请求将相关位置点信息，与最新的blnlog信息发送给从库的IO线程，从库的IO线程将SQL语句的信息放在relay-log中，最后从库的SQL线程将relay-log中的SQL语句应用到从库中，实现主库与从库之间的数据同步，然后不断重新上述动作
+
+13. 用一条命令将除了sshd、crond、network、rsyslog几个服务之外的服务全部关闭（无需开机自动）
+
+方法一：
+[root@centos6~]# for name in `chkconfig –list|grep 3:on|awk ‘{print $1}’|grep -Ev “sshd|crond|rsyslog|network”`;dochkconfig $name off;done
+[root@centos6~]# chkconfig –list|grep 3:on
+crond 0:off 1:off 2:on 3:on 4:on 5:on 6:off
+network 0:off 1:off 2:on 3:on 4:on 5:on 6:off
+rsyslog 0:off 1:off 2:on 3:on 4:on 5:on 6:off
+sshd 0:off 1:off 2:on 3:on 4:on 5:on 6:off
+
+方法二：
+[root@centos6 ~]# chkconfig–list|grep 3:on|awk ‘{print $1}’|grep -Ev”sshd|crond|rsyslog|network”|sed -r “s#(.*)#chkconfig \1off#g”|bash
+[root@centos6~]# chkconfig –list|grep 3:on
+crond 0:off 1:off 2:on 3:on 4:on 5:on 6:off
+network 0:off 1:off 2:on 3:on 4:on 5:on 6:off
+rsyslog 0:off 1:off 2:on 3:on 4:on 5:on 6:off
+sshd 0:off 1:off 2:on 3:on 4:on 5:on 6:off
+
+14. 说明系统/etc/inittab中各个启动级别的含意
+
+[root@centos6~]# tail /etc/inittab
+#Default runlevel. The runlevels used are:
+# 0 – halt (Do NOT set initdefault to this) 关机
+# 1 – Single user mode 单用户模式
+# 2 – Multiuser, without NFS (The same as 3,if you do not have networking) 多用户，没有NFS
+# 3 – Full multiuser mode 完整多用户模式
+# 4 – unused
+# 5 – X11 桌面模式
+# 6 – reboot (Do NOT set initdefault to this) 重启
+#
+id:3:initdefault: 默认

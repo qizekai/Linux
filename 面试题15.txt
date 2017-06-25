@@ -1,0 +1,222 @@
+1. cat -n file1file2 命令的意思是？
+
+A 只会把文件file1的内容输出到屏幕上。
+B 把文件file1和file2连在一起，然后输出到屏幕上。
+C 创建文件file1和file2
+D 把file2的内容输出到file1中并保存
+2. Linux下查看服务程序占用的端口命令是什么?
+
+A ps -aux
+B netstat –apn
+C watch
+D lsof
+3. 对于Linux说法，下列说法正确的是（）
+
+A 线性访问内存非法时，当前线程会进入信号处理函数
+B 用mv命令移动文件时，文件的修改时间会发生变化
+C ulimit -c设置的是函数调用栈的大小
+D malloc函数是应用程序向操作系统申请内存的接口
+4. 在Linux系统上，下面那个命令不可以用来查看文件内容（）
+
+A cat
+B ls
+C less
+D more
+5. 下面哪个命令可以从文本文件的每一行中截取指定内容的数据。
+
+A cp
+B dd
+C fmt
+D cut
+6. Linux下查看磁盘使用情况的命令是？
+
+A dd
+B df
+C top
+D netstat
+7. 设umask为002, 则新建立的文件的权限是什么？
+
+A -rw-rw-r–
+B rwxrwx-w-
+C ——-w-
+D rwxrwxr-x
+8. Linux系统中某个可执行文件属于root并且有setuid，当一个普通用户mike运行这个程序时，产生的进程的有效用户和实际用户分别是____？
+
+A root mike
+B root root
+C mike root
+D mike mike
+E deamon mike
+F mike deamon
+9. 在linux系统中，用来存放系统所需要的配置文件和子目录是
+
+A /etc
+B /var
+C /root
+D /home
+10. 文件exer1 的访问权限为rw-r–r– ，现要增加所有用户的执行权限和同组用户的写权限，下列命令正确的是
+
+A chmoda+xg+w exer1
+B chmod 765 exer1
+C chmodo+x exer1
+D chmodg+w exer1
+11. linux查看系统活跃进程的命令是？
+
+A ps
+B netstat
+C df
+D ifconfig
+12. 用什么命令来显示当前目录？
+
+A echo $(pwd)
+B echo pwd
+C $pwd
+D pwd | echo
+13. crontab文件由6个域组成，每个域之间用空格分隔，下列哪个排列方式是正确的？
+
+A MIN HOUR DAY MONTH YEAR COMMAND
+B MIN HOUR DAY MONTH DAYOFWEEK COMMAND
+C COMMAND HOUR DAY MONTH DAYOFWEEK
+D COMMAND YEAR MONTH DAY HOUR MIN
+14. 在 Linux 中查看 ARP 缓存记录的命令是?
+
+A “arp –a”
+B “arp –d”
+C “arp -L”
+D “arp –D”
+15. 以下函数中，和其他函数不属于一类的是_____。
+
+A fread
+B gets
+C getchar
+D pread
+E getline
+F scanf
+16. 在xdm的配置目录中，哪个文件用来设置在用户通过xdm登录后自动起动的应用程序？
+
+A The Xsession file
+B The Xsetup_0 file
+C The Xstart_up file
+D The GiveConsole file
+17. linux下给文件start.sh设置权限为自己可读可修改可执行,组内用户为可读可执行不可修改,其余用户没有任何权限,那么设置该文件权限的命令为()
+
+A chmod start.sh 706
+B chmod start.sh 750
+C chmod start.sh 705
+D chmod start.sh 777
+18. 采用多路复用I/O监听3个套接字的数据时，如果套接字描述符分别是：5,17,19,则
+select(int maxfd,struct fd_set* rdset,NULL,NULL)
+中的maxfd应取为（）
+
+A 4
+B 20
+C 5
+D 9
+19. Linux系统中某个可执行文件属于root并且有setid，当一个普通用户 mike运行这个程序时，产生的进程的有效用户和实际用户分别是？
+
+A root mike
+B root root
+C mike root
+D mike mike
+E deamon mike
+F mike deamon
+20. 在Linux 系统中，在运行一个程序时，程序中未初始化的全局变量会被加载到以下哪个内存段中?
+
+A BSS
+B TEXT
+C DATA
+D STACK
+21. int main(){fork()||fork();}共创建几个进程：_____
+
+A 1
+B 2
+C 3
+D 4
+E 5
+F 6
+22. 不需要编译内核的情况是 （）。
+
+A 删除系统不用的设备驱动程序时
+B 升级内核时
+C 添加新硬件时
+D 将网卡激活
+23. 下列关于管道(Pipe)通信的叙述中，正确的是()
+
+A 一个管道可以实现双向数据传输
+B 管道的容量仅受磁盘容量大小限制
+C 进程对管道进行读操作和写操作都可能被阻塞
+D 一个管道只能有一个读进程或一个写进程对其操作
+24. （多选）下面哪些命令可以查看file1文件的第300-500行的内容？
+
+A cat file1 | tail -n +300 | head -n 200
+B cat file1| head -n 500 | tail -n +300
+C sed -n ‘300,500p’ file1
+25. （多选）如何查看当前Linux系统的状态,如CPU使用,内存使用,负载情况，下列描述正确的是？
+
+A 可以使用top命令分析CPU使用，内存使用，负载等情况
+B 可以使用free查看内存整体的使用情况
+C 可以使用cat /proc/meminfo查看内存更详细的情况
+D 以上描述都不正确
+26. （多选）下面的内存管理模式中，会产生外零头的是（）
+
+A 页式
+B 段式
+C 请求页式
+D 请求段式
+27. （多选）bash中，需要将脚本demo.sh的标准输出和标准错误输出重定向至文件demo.log，以下哪些用法是正确的（）
+
+A bash demo.sh &>demo.log
+B bash demo.sh>&demo.log
+C bash demo.sh >demo.log 2>&1
+D bash demo.sh 2>demo.log 1>demo.log
+28. （多选）现在将/目录下的www文件权限改为只有主用户有执行的权限的有
+
+A chmod 100 /www
+B chmod 001 /www
+C chmod u+x ,g-x,o-x /www
+D chmod o-x,g-x,u-x /www
+29. （多选）有命令：
+awk’BEGIN { Arr[2,79]=78 __________ }’
+为了让执行的结果是78，应该填（）语句
+
+A print Arr[“2\03479”]
+B print Arr[2,79]
+C idx=2 SUBSEP 79;print Arr[idx]
+D print Arr[ 2, 79]
+30. （填空题）在linux中，某文件的权限为：drw-r–r–，该权限用数值形式表示为_______ ，修改文件权限用_______命令。
+
+
+
+答案如下：
+
+1. B
+2. B
+3. A
+4. B
+5. D
+6. B
+7. A
+8. A
+9. A
+10. A
+11. A
+12. A
+13. B
+14. A
+15. D
+16. B
+17. B
+18. B
+19. A
+20. A
+21. C
+22. D
+23. C
+24. ABC
+25. ABC
+26. BD
+27. ABC
+28. AC
+29. ABCD
+30. 644;chmod
+

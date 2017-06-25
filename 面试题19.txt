@@ -1,0 +1,204 @@
+1、请描述下linux 系统的开机启动过程
+  开机加电BIOS自检———–>MBR引导———–>grub引导菜单———–>
+  加载内核———–>启动init进程———–>读取inittab文件———–>
+  启动mingetty进程———–>登录系统
+
+2、权威DNS和递归DNS含义，智能DNS的实现原理
+权威DNS是经上一级授权对域名进行解析的DNS服务器，同时它可以把解析授权转授给其他服务器；
+递归DNS负责接受用户对任何域名的查询，并返回结果给用户，它可以缓存结果避免用户再向上查询；
+智能DNS就是将对用户发起的查询进行判断出是哪个运营商的用户查询，然后将请求转发给相应的运营商IP处理，减少跨运营访问的时间，提高访问速度。
+
+3、通过APACHE访问日志access.log统计IP和每个地址访问的次数，列出访问量前10名的IP地址，写出具体命令
+  awk '{print $1}' access.log|uniq -c|sort -rn |head -10
+
+4、编写脚本实现将/usr/local/test目录下大于100K文件，将它拷贝到/tmp目录下
+
+#!/bin/bash
+for file in `ls /usr/local/test`
+do
+if [ -f $file ];then
+    if [ `ls -l $file`|awk '｛print $5｝' -gt 10000];then
+       mv $file /tmp/
+    fi
+fi
+done
+
+5、将本地的80端口的请求转发到8080端口，本机地址10.0.0.254，写出命令
+  iptables -t nat -A PRETOUTING -d 10.0.0.254 -p tcp –dprot 80 -j DNAT –to-destination 10.0.0.254:8080
+
+6、如何实现nginx代理的节点访问日志记录的是真实访客的IP，不是代理的IP
+配置nginx.conf配置文件增加下同的标记内容
+
+server{
+     listen 80;
+     server_name blog.text.com;
+     location / {
+     proxy_pass http://test_servers;
+     proxy_set_header Host $host;
+     proxy_set_headerX-Forwarded-For $remote_addr;
+｝
+修改完成后，重新加载nginx即可：/application/nginx/sbin/nginx -s reload
+
+7、MYSQL 一主多从，主库宕机，如何合理切换到从库，其它从库如何处理？
+
+1）登陆所有从库查看post信息，使用POST最大的做为新的主库，然后将从为提升为新的主库，登陆从库（新的主库）执行stop slave，
+2）修改my.cnf配置文件，开启log-bin并重新启动数据库服务，登陆数据库执行restet master ,show master status\G;查看主库信息，最后创建授权同步用户与权限和网站使用数据库的用户与权限，同步所有机器的/etc/hosts文件（这时就体现了之前全网用域名则不是用IP的作用了，不然还得修改网站程序切换到新主库服务器IP上，否则无法连接到数据库）；
+3）登陆其它从库，执行change master操作，查看同步状态。
+
+
+8、误操作drop语句导致数据库数据破坏，请给出恢复的实际大体步骤
+所有数据恢复的基础都在于备份，必须要有完整的备份，否则恢复无从谈起，误操作导致的数据库破坏需要使用增量恢复的方法进行恢复数据库，具体步骤如下：
+
+1）查看备份与binlog文件
+
+2）刷新并备份binlog文件
+mysqladmin -uroot -pmysql123 -S /data/mysql.sockflush-logs
+
+3）将binlog文件恢复成sql语句
+mysqlbinlog –no-defaults mysql-bin.000061 mysql-bin.000062 >bin.sql
+
+4）将其中误操作的语句删除（就是drop的动作）
+
+5）解压全备文件，恢复全备文件
+gzip -d mysql_backup_2016-10-12.sql.gz
+mysql -uroot -pmysql123 -S/data/3306/mysql.sock < mysql_backup_2016-10-12.sql
+如果有对表的操作，恢复数据时需要接表名
+
+6）恢复误操作前的binlog文件记录的sql语句
+mysql -uroot -pmysql123 -S/data/3306/mysql.sock < bin.sql
+最后登陆数据库，查看数据是否恢复成功，如果有确定的误操作时间，就直接恢复这段时间的数据即可。
+
+
+
+9、列举一个实际生产的例子，网站访问速度慢是因为数据库访问慢导致的
+
+问题情况描述：
+突然有一天，有同事反应，网站访问速度很慢，有时候会出现打不开网站的情况，刷新等待好长时间后又正常打开。
+
+解决步骤：
+登陆数据库执行show full processlist 看到有很多相同的查询动作且征对同一张表，因此确定网站打不开的原因是这个，故将此IP禁止访问。日常工作中避免此类问题发生解决方法如下：可以将数据库读写分离；安装数据缓存服务器，尽量将大部分的请求不直接对接数据库。
+
+10、一个shell 脚本手工可以执行，放入定时任务后不能执行，可能的原因？
+手工可以执行，表明脚本本身不存在逻辑上的问题，可能原因有以下几点
+1）定时任务书写有错误导致，执行的脚本没有写绝对路径，找不到脚本
+2）环境变量问题导致。
+
+
+
+11、利用shell开发rsync服务启动、停止脚本，并通过chkconfig 进行开关机管理
+
+[root@mysql-1 download]# vi RSstart.sh
+#!/bin/sh
+##create by mingongge at 2017-01-10
+. /etc/init.d/functions
+case "$1" in
+start)
+      rsync --daemon
+      if [ $? -eq 0 ];then
+        action "rsync is started" /bin/true
+     else
+        action "rsync is started" /bin/false
+     fi
+;;
+stop)
+     pkill rsync
+     sleep 2
+     if [ `ps -ef|grep rsync|grep -v grep |wc -l` -eq 0 ];then
+         action "rsync is stoped " /bin/true
+     else
+         action "rsync is stoped " /bin/false
+     fi
+;;
+restart)
+    pkill rsync
+    sleep 2     
+    if [ `ps -ef|grep rsync|grep -v grep |wc -l` -eq 0 ];then
+       rsync --daemon
+       if [ $? -eq 0 ];then
+          action "rsync is restarted" /bin/true
+       fi
+    fi
+;;
+*)
+   echo "USAGE :{start|stop|restart}"
+;;
+esac
+“RSstart.sh” [New] 36L, 731C written
+[root@mysql-1 download]# chmod +x RSstart.sh
+[root@mysql-1 download]# sh RSstart.sh
+USAGE :{start|stop|restart}
+[root@mysql-1 download]# sh RSstart.sh start
+rsync is started [ OK ]
+[root@mysql-1 download]# ps -ef|grep rsync
+root 1088 1 0 Jan09 ? 00:00:00 rsync –daemon
+root 3527 2869 0 03:54 pts/0 00:00:00 grep rsync
+[root@mysql-1 download]# sh RSstart.sh stop
+rsync is stoped [ OK ]
+[root@mysql-1 download]# ps -ef|grep rsync
+root 3540 2869 0 03:54 pts/0 00:00:00 grep rsync
+[root@mysql-1 download]# sh RSstart.sh start
+rsync is started [ OK ]
+[root@mysql-1 download]# sh RSstart.sh restart
+rsync is restarted [ OK ]
+[root@mysql-1 download]# ps -ef|grep rsync
+root 3558 1 0 03:54 ? 00:00:00 rsync –daemon
+root 3564 2869 0 03:55 pts/0 00:00:00 grep rsync
+
+配置开关机管理
+然后在脚本最前面加上以下内容
+# chkconfig: 2345 21 99
+# description: chkconfig rsync service
+具体自己测试下，也有可能这个启动，关闭序号有冲突，需要修改。
+
+12、请描述OSI7层模型各层名字及功能，并举例在不同层对应的协议
+
+第一层：物理层，利用传输介质为数据提供物理连接， 对应的协议：ARP
+第二层：数据链路层：建立和管理各节点间的链接链路 对应的协议：PPTP、CDP
+第三层：网络层，是控制数据链路层与上传输层之间的信息转发、建立与维持对应的协议：IP、路由协议
+第四层：传输层，提供会话传输服务，确保数据正确传送对应的协议：TCP UDP
+第五层：会话层，提供建立会话管理，支持数据交换
+第六层：表示层，处理数据（数据格式、编码、加密等），按一定的格式传送至会话层
+第七层：应用层，为用户提供各类应用服务（文件、打印、邮件等服务）对应协议：HTTP、FTP、SMTP、POP3
+
+13、linux系统环境下如何查看系统运行了多长时间？
+
+执行系统命令uptime，其中第三个字段，如下的2:32处则表示系统从上次启动开始已运行了多长时间。
+[root@mysql-1 download]#uptime
+02:05:22 up 2:32, 2 users, load average: 0.00, 0.00, 0.00
+
+14、linux系统中添加路由的方法
+
+主机路由
+  route add -host 192.168.197.100 dev eth0
+网关路由
+  route add default gw 192.168.197.1
+网络路由
+  route ad -net 192.168.1.0 netmask 255.255.255.0 deveth1
+  route ad -net 192.168.1.0 netmask 255.255.255.0 gw192.168.197.1
+
+15、已知test.txt文件内容如下，请取出文件的5-15行内容
+[root@i ~]# cat test.txt
+1
+2
+3
+4
+5bbb
+6xxxxxxxxxxx
+7123i4i44
+8
+9
+10
+11
+12
+13ffffff
+14fffff
+15bbbbbb
+16
+17nnnnnn
+
+方法一：[root@i ~]# grep 15 bbbbbb -B 10 test.txt
+
+
+方法二：[root@i ~]# sed -n '5,15p' test.txt
+
+方法三：[root@i~]# awk '{if(NR4) print $1}' test.txt

@@ -1,0 +1,119 @@
+1.为什么连接协议是三次连接握手？？关闭是四次挥手??
+	这是因为服务端的LISTEN状态下的SOCKET当收到SYN报文的连接请求后，它可以把ACK和SYN(ACK起应答作用，而SYN起同步作用)放在一个报文里来发送。但关闭连接时，当收到对方的FIN报文通知时，它仅仅表示对方没有数据发送给你了；但未必你所有的数据都全部发送给对方了，所以你可能未必会马上会关闭SOCKET,也即你可能还需要发送一些数据给对方之后，再发送FIN报文给对方来表示你同意现在可以关闭连接了，所以它这里的ACK报文和FIN报文多数情况下都是分开发送的。
+2.nginx和apache的区别??
+功能对比
+	Nginx和Apache一样，都是HTTP服务器软件，在功能实现上都采用模块化结构设计，都支持通用的语言接口，如PHP、Perl、Python等，同时还支持正向和反向代理、虚拟主机、URL重写、压缩传输、SSL加密传输等。
+在处理连接方式上
+	Nginx支持epoll，而Apache却不支持；
+在空间使用上
+	Nginx安装包仅仅只有几百K，和Nginx比起来Apache绝对是庞然大物。
+
+Nginx相对apache的优点
+	轻量级，同样起web 服务，比apache 占用更少的内存及资源
+	静态处理，Nginx 静态处理性能比 Apache 高 3倍以上
+	抗并发，nginx 处理请求是异步非阻塞的，而apache则是阻塞型的，在高并发下nginx 能保持低资源低消耗高性能。在Apache+PHP（prefork）模式下，如果PHP处理慢或者前端压力很大的情况下，很容易出现Apache进程数飙升，从而拒绝服务的现象。
+	高度模块化的设计，编写模块相对简单
+
+
+apache相对nginx的优点
+	rewrite，比nginx 的rewrite 强大
+	模块超多，基本想到的都可以找到
+	少bug，nginx的bug相对较多
+	超稳定
+	Apache对PHP支持比较简单，Nginx需要配合其他后端用
+	选择Nginx的优势所在
+
+
+3.nginx的常用模块??
+
+ 1.ngx_http_auth_basic_module模块      实现访问控制
+ 2.ngx_http_stub_status_module模块     用于输出nginx的基本状态信息；
+ 3.ngx_http_log_module模块   		   日志模块
+ 4.ngx_http_gzip_module      		   压缩模块
+ 5.ngx_http_ssl_module模块    		   秘钥认证
+ 6.ngx_http_rewrite_module模块         url重写模块
+ 7.ngx_http_referer_module模块 		   防止盗链
+ 8.ngx_http_proxy_module模块           代理转发模块
+ 9.ngx_http_headers_module模块         自定义头部的模块
+ 10.ngx_http_fastcgi_module模块：      fastcgi模块
+ 11.ngx_http_upstream_module模块       七层调度器模块
+ 12.ngx_stream_core_module模块         四层调度器模块
+
+
+4.nginx的正则表达式顺序？？
+
+正则表达式顺序
+	1、"="前缀指令匹配，如果匹配成功，停止其他匹配
+	2、普通字符串指令匹配，顺序是从长到短，匹配成功的location如果使用“^~”前缀，则停止其他匹配。
+	3、正则表达式指令匹配，按配置文件里的顺序，成功就停止其他匹配。
+	4、如果第3步中有匹配成功，则使用该结果，否则使用第二步中的匹配结果。
+
+5.lvs和haproxy的区别？？？
+Nginx的优点：
+	1、工作在OSI第7层，可以针对http应用做一些分流的策略。比如针对域名、目录结构。它的正则比HAProxy更为强大和灵活；
+	2、Nginx对网络的依赖非常小，理论上能ping通就就能进行负载功能，这个也是它的优势所在；
+	3、Nginx安装和配置比较简单，测试起来比较方便；
+	4、可以承担高的负载压力且稳定，一般能支撑超过几万次的并发量；
+	5、Nginx可以通过端口检测到服务器内部的故障，比如根据服务器处理网页返回的状态码、超时等等，并且会把返回错误的请求重新提交到另一个节点；
+	6、Nginx不仅仅是一款优秀的负载均衡器/反向代理软件，它同时也是功能强大的Web应用服务器。LNMP现在也是非常流行的web环境，大有和LAMP环境分庭抗礼之势，Nginx在处理静态页面、特别是抗高并发方面相对apache有优势；
+	7、Nginx现在作为Web反向加速缓存越来越成熟了，速度比传统的Squid服务器更快，有需求的朋友可以考虑用其作为反向代理加速器；
+Nginx的缺点：
+	1、Nginx不支持url来检测。
+	2、Nginx仅能支持http和Email，这个它的弱势。
+	3、Nginx的Session的保持，Cookie的引导能力相对欠缺。
+
+
+HAProxy的优点：
+	1、HAProxy是支持虚拟主机的，可以工作在4、7层(支持多网段)；
+	2、能够补充Nginx的一些缺点比如Session的保持，Cookie的引导等工作；
+	3、支持url检测后端的服务器；
+	4、它跟LVS一样，本身仅仅就只是一款负载均衡软件；单纯从效率上来讲HAProxy更会比Nginx有更出色的负载均衡速度，在并发处理上也是优于Nginx的；
+	5、HAProxy可以对Mysql读进行负载均衡，对后端的MySQL节点进行检测和负载均衡，不过在后端的MySQL slaves数量超过10台时性能不如LVS；
+	6、HAProxy的算法较多，达到8种；
+
+6.三次握手原理？？
+
+（1）第一次握手：
+        Client将标志位SYN置为1，随机产生一个值seq=J，并将该数据包发送给Server，Client进入SYN_SENT状态，等待Server确认。
+（2）第二次握手：
+        Server收到数据包后由标志位SYN=1知道Client请求建立连接，Server将标志位SYN和ACK都置为1，ack=J+1，随机产生一个值seq=K，并将该数据包发送给Client以确认连接请求，Server进入SYN_RCVD状态。
+（3）第三次握手：
+        Client收到确认后，检查ack是否为J+1，ACK是否为1，如果正确则将标志位ACK置为1，ack=K+1，并将该数据包发送给Server，Server检查ack是否为K+1，ACK是否为1，如果正确则连接建立成功，Client和Server进入ESTABLISHED状态，完成三次握手，随后Client与Server之间可以开始传输数据了。
+
+7.四次挥手原理????
+（1）第一次挥手：Client发送一个FIN，用来关闭Client到Server的数据传送，Client进入FIN_WAIT_1状态。
+（2）第二次挥手：Server收到FIN后，发送一个ACK给Client，确认序号为收到序号+1（与SYN相同，一个FIN占用一个序号）,Server进入CLOSE_WAIT状态。
+（3）第三次挥手：Server发送一个FIN，用来关闭Server到Client的数据传送，Server进入LAST_ACK状态。
+（4）第四次挥手：Client收到FIN后，Client进入TIME_WAIT状态，接着发送一个ACK给Server，确认序号为收到序号+1，Server进入CLOSED状态，完成四次挥手
+
+
+8.说一下有限状态机？？
+
+CLOSED 没有任何连接状态
+LISTEN 侦听状态，等待来自远方TCP端口的连接请求
+SYN-SENT 在发送连接请求后，等待对方确认
+SYN-RECEIVED 在收到和发送一个连接请求后，等待对方确认
+ESTABLISHED 代表传输连接建立，双方进入数据传送状态
+FIN-WAIT-1 主动关闭,主机已发送关闭连接请求，等待对方确认
+FIN-WAIT-2 主动关闭主机已收到对方关闭传输连接确认，等待对方发送关闭传输连接请求
+TIME-WAIT 完成双向传输连接关闭，等待所有分组消失
+CLOSE-WAIT 被动关闭,收到对方发来的关闭连接请求，并已确认
+LAST-ACK 被动关闭,等待最后一个关闭传输连接确认，并等待所有分组消失
+CLOSING 双方同时尝试关闭传输连接，等待对方确认
+
+
+
+
+9.说下nginx的优点
+作为Web服务器: 
+	Nginx处理静态文件、索引文件，自动索引的效率非常高。
+作为代理服务器:
+	Nginx可以实现无缓存的反向代理加速，提高网站运行速度。
+作为负载均衡服务器：
+	Nginx既可以在内部直接支持Rails和PHP，也可以支持HTTP代理服务器对外进行服务，同时还支持简单的容错和利用算法进行负载均衡。
+在性能方面:
+	Nginx是专门为性能优化而开发的，在实现上非常注重效率。它采用内核Poll模型(epoll and kqueue )，可以支持更多的并发连接，最大可以支持对50 000个并发连接数的响应，而且只占用很低的内存资源。
+在稳定性方面：
+	Nginx采取了分阶段资源分配技术，使得CPU与内存的占用率非常低。Nginx官方表示，Nginx保持10 000个没有活动的连接，而这些连接只占用2.5MB内存，因此，类似DOS这样的攻击对Nginx来说基本上是没有任何作用的。
+在高可用性方面:
+	Nginx支持热部署，启动速度特别迅速，因此可以在不间断服务的情况下，对软件版本或者配置进行升级，即使运行数月也无需重新启动，几乎可以做到7×24小时不间断地运行。

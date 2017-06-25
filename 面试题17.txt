@@ -1,0 +1,100 @@
+1、请写出五种系统性能分析工具，并简述其作用和特点
+uptime
+	uptime 比较重要的能显示当前系统的负载状态,一般情况下这个值越大就说明等待 CPU 的进程越多，如果大于核数就说明有进程在等待 CPU，需要看一下程序的问题或者考虑加机器了。另外即使负载过载了也不一定说明 CPU 的利用率高，因为很可能是大量的请求 IO 的进程在等待，像一些数据库服务，所以看完负载后还要针对应用场景综合考量。
+top （htop）
+	top 其实是一个相当全面的分析了还是事实的，其他很多命令能拿到的数据，top 一个命令就可以拿到。
+	htop 是 top 的改进版，带着各种颜色表示和百分比进度条，以及更丰富的功能，小伙伴们可以尝试一下。
+mpstat
+	mpstat 可以显示出每个 CPU 核心的工作情况，其实也可以在 top 里输入 1 看到。
+	通过这个命令我们可以观察是不是存在负载不均的现象，某个核心跑满了，另一个还在闲着，造成整体性能的下降。
+iostat
+	加上 -x 参数后可以看到几乎全部的 io 指标，包括 tps， 请求 queue 的平均长度，平均处理时间， 磁盘带宽利用率等等。每个指标 manual 中都有详细的解释。
+vmstat	
+free
+	vmstat 是一个展示内存整体使用情况的命令，其中要关注一下 swpd 和 swap 的 in/out 。如果这一部分的数值过大，会频繁的 IO 造成性能下降，要么看看是不是程序内存泄露了，要么就加内存吧。 memory 里的 buffer 指的是写磁盘缓冲区， 而 cache 可以当成是读文件的缓冲区。free也是类似的功能，不过只展示内存部分的内容。
+ping
+	主要反映了主机间的延迟和连通性，很多时候也只能告诉我们这些了。可以尝试一下 hping 有着指定端口，高级 tracerout 的功能
+nicstat
+	一个和 iostat 类似，不过是针对网卡的命令。
+dstat
+	一个综合了cpu、 memory、 IO、 network 的工具，可以事实展示当前的系统资源利用情况。
+
+
+2、请写出web服务器的调优要点
+ 1.改善硬件配置
+ 2.内部参数优化
+ 3.缓存策略
+ 4.操作系统参数优化
+
+
+3、请写出你知道或使用过的nginx扩展模块（注意标注知道和使用）
+ 1.ngx_http_auth_basic_module模块      实现访问控制
+ 2.ngx_http_stub_status_module模块     用于输出nginx的基本状态信息；
+ 3.ngx_http_log_module模块   		   日志模块
+ 4.ngx_http_gzip_module      		   压缩模块
+ 5.ngx_http_ssl_module模块    		   秘钥认证
+ 6.ngx_http_rewrite_module模块         url重写模块
+ 7.ngx_http_referer_module模块 		   防止盗链
+ 8.ngx_http_proxy_module模块           代理转发模块
+ 9.ngx_http_headers_module模块         自定义头部的模块
+ 10.ngx_http_fastcgi_module模块：      fastcgi模块
+ 11.ngx_http_upstream_module模块       七层调度器模块
+ 12.ngx_stream_core_module模块         四层调度器模块
+
+
+4、请简述你了解的自动化配置管理工具特点和运行原理
+
+ Ansible------>五中心节点,配置简单,python书写
+ 原理:
+ 	利用ssh秘钥认证来实现多主机操控
+
+5、目前，有一个文件，内容如下：
+172.16.100.1
+172.16.100.2
+172.16.100.3
+172.16.100.4
+请使用while和ssh命令，登录文件内的ip并执行hostname命令
+
+ #!/bin/bash
+ count=`cat log |wc -l`
+ i=0
+ while($i<=4){
+	 ssh `cat log |tr '\n' '%'|awk -F'%' '{print $i}'` hostname
+	 ++$i
+ }
+
+
+6、请使用awk命令将如下两份文件中名字相同的两行合并起来
+   A文件：
+      大广州 21岁
+      广州大 23岁
+      州广大 22岁
+      广州大 24岁
+   B文件：
+      广州大 男
+      大广州 男
+      州广大 男
+      广州大 男
+输出效果：
+    大广州 21岁 男
+
+   awk 'NR==FNR{a[$1]=$2}NR>FNR{print $0,a[$1]}' 2.txt  1.txt > 3.txt
+ 
+7、请使用绘图的方式简述TCP/IP三次握手和四次断开的交互过程
+ 
+8、请根据你的理解，简述高可用服务体系的相关组件，并列举该组件的具体实现服务名字
+ 高可用nginx/mysql/lvs：keepalived
+ 高可用mysql:mha/proxysql
+ 高可用redis:sentinel
+ ....
+ 
+9、请根据你的理解，简述负载均衡的实现方式
+ 	nginx/haproxy/lvs
+
+10、请根据你的理解，简述数据迁移工具和数据存储服务有哪些以及相关特点
+	数据迁移工具:
+		mysqldump
+		xtrabackup
+	数据存储服务:
+		mogilefile
+		fastdfs

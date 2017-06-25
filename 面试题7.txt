@@ -1,0 +1,115 @@
+面试题
+
+1. 描述nginx配置ssl的过程
+	1.首先需要申请或者自建ssl证书,获取csr和key文件
+	2.把配置写入到nginx配置中,并监听443端口
+	3.使用重写规则把访问http请求转换至https上面
+
+	配置:
+		ssl on;
+	    ssl_certificate /etc/ssl/private/example_com.crt;
+	    ssl_certificate_key /etc/ssl/private/example_com.key;
+
+2. 描述nginx location在配置中的优先级
+
+~：对URI做正则表达式模式匹配，区分字符大小写；
+~*：对URI做正则表达式模式匹配，不区分字符大小写；
+^~：对URI的左半部分做匹配检查，不区分字符大小写；
+不带符号：匹配起始于此uri的所有的url；
+匹配优先级：=, ^~, ~/~*，不带符号；
+注意:同一匹配模式下,匹配匹配长度较长的匹配优先级比较高
+
+3. 如果服务器上有多个应用，怎么规划nginx的配置
+	1.都使用虚拟主机配置
+	2.每个应用配置独立,独立配置文件和端口
+
+4. 502、404、301是什么意思
+	404 未找到
+	301 永久重定向
+	502 上层网关错误
+
+5.描述Tomcat改端口号怎么实现？怎么调整Tomcat的jvm参数？怎么实现Tomcat开机自启？
+	修改tomcat配置
+
+
+6. nginx、Tomcat、MySQL构成的应用系统无法工作了，请列出至少五种可能的原因
+
+nginx宕机,连接数太大/服务器资源不够/
+tomcat宕机,连接数太大/服务器资源不够/
+mysql宕机,连接数太大/服务器资源不够/
+
+7. 怎么限制redis不能对外提供访问？怎么配置访问redis需要密码认证？
+限制:
+	1.防火墙限制,只允许特定主机进行访问
+	2.使用密码验证
+	3.配置protected-mode,只允许内网访问
+密码认证:
+	配置文件:
+		requirepass 密码
+
+
+8. MySQL数据库表user解雇如下
+	create table(
+		user_id 		varchar(40) not null,
+		has_email 		int(1) default 0,
+		primary key (user_id)
+	)
+	现在有下面两个需求，请写出相应的SQL：
+	a) 将has_email字段修改为has_email int(1) default 1
+		alter table user modify has_email int(1) defautlt 1;
+	b) 添加一个字段 user_name varchar(40) not null
+		alter table user add user_name varchar(40) not null;
+
+9. 利用nginx、Tomcat、MySQL及其他工具搭一个应用集群环境，请绘制架构图
+
+
+nginx(80)------>Tomcat(8080)---->mysql
+
+
+
+1. 简述lamp结构的详细内容
+
+lamp:linux+apache+mysql+php
+
+2. Apache如何实现虚拟主机？
+
+1.编辑配置文件,注释中心主机配置,注释Document Root配置
+2.在配置文件中,启用vhost模块
+3.在conf.d目录内配置vhost.conf文件,新建虚拟主机
+4.重启apache即可实现
+
+
+3. MySQL如何实现每天凌晨三点自动备份
+	* 3 * * * mysqldump -uroot -pqikai --all-databases >web`date +%F`_bak.sql
+
+4. MySQL数据库误删，如何恢复数据库
+	1.mysqldump+二进制日志
+	2.xtarbackup恢复
+
+5. MySQL如何查看用户做了哪些动作（答出binlog即可）
+	1.查看二进制日志
+		mysqlbinlog mysql-bin.000001
+	2.使用慢查询日志,对慢操作记录
+
+6. 项目上线迭代如何实现自动化，分为那几步
+
+1.本地代码测试
+2.测试无误后,自动化脚本实现项目迁移,同时备份原先
+3.测试,出现问题回滚
+
+7. 如何配置环境变量（jdk_1.8.0_45）
+	vim /etc/profile.d/java.sh
+
+8. 编译安装的好处有哪些？你倾向于yum安装还是源码安装
+	
+源代码安装目前大家都是为了：
+1、自定义软件功能
+2、优化编译参数，提高性能
+3、解决不必要的软件间依赖
+
+我倾向源码安装
+
+9. 写一个shell脚本,备份某个数据库所有库（数据库用户名，密码，IP分别是：root passwd 192.168.1.138）
+10. shell脚本中exit 1代表什么
+	定义出错,返回的状态码
+	

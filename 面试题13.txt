@@ -1,0 +1,181 @@
+1.查找文件后缀是Log的三天前的文件删除和三天内没修改过的文件
+
+[root@tiejiang ~]# find  / -name ".log" -mtime +3 -exec rm  fr {} ;   find /log ! -mtime -3
+
+2.写一个脚本将目录下大于100kb的文件移动到/Tmp下
+
+[root@tiejiang ~]# find / -size +100k -exec mv {} /tmp ;
+ 
+3.将数据库备份并打包传递到远程服务器192.168.1.1的/Backup目录下
+
+[root@tiejiang ~]# mysqldump -u root -p database &gt; database.sql ;tar -czvf database.tar.gz database.sql ; rsync -avP ./database.tar.gz root@192.168.1.1:/backup
+
+4.日志如下统计访问Ip最多的前10个
+
+[root@tiejiang ~]# awk '{print $1}' *.log | sort | uniq -c | sort -nr | head -n
+
+
+5.把/Usr/Local/替换成其他的目录 
+
+[root@tiejiang ~]# sed -i 's//usr/local//目录/g' 文件
+
+6.查看服务器程序运行级别和修改运行级别，和服务的运行级别
+
+查看：who -r 
+修改：etc/inittab 
+服务运行级别：chkconfig --list vsftp 
+修改：chkconfig --level 345 vsftp on
+
+
+7.用Tcpdump截取本机Ip 192.168.23.1  80端口的包
+
+tcpdump tcp port 80 host 192.168.23.1 
+tcpdump -w test host 192.168.1.1 and tcp port 80
+
+8.用Tcpdump截取Ip 192.168.23.1访问主机 Ip 192.168.23.2 的80端口的包
+
+tcpdump host 192.168.23.1 and 192.168.23.2 and dst port 80
+
+9.用Iptables将192.168.0.100的80端口映射到59.15.17.231的8080端口
+
+[root@tiejiang ~]# iptables -t nat -A PREROUTINT -p tcp -d 192.168.0.100 --dport 80 -j DNAT --to-destination 59.15.17.231:8080
+
+
+10.本机的80端口转发到8080
+
+[root@tiejiang ~]# iptables -t nat -A PREROUTING -p tcp --dport -j REDIRECT --to-ports 8080
+
+
+11.禁止一个用户登录，但可以使用Ftp
+
+修改etc/passwd 最后一个字段 改成/bin/nologin
+
+12.获取1.Txt中第二行第三列的数据，输出到2.Txt
+
+[root@tiejiang ~]# cat 1.txt|awk 'NR==2{print $3}' &gt; 2.txt
+
+13.查看Linux系统当前单个共享内存段的最大值
+
+[root@tiejiang ~]# ipcs -a
+
+14.用什么命令查询指定IP地址的服务器端口
+
+[root@tiejiang ~]# nmap 127.0.0.1
+
+15.如何让history命令显示具体时间
+
+HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S "
+
+16.查看Linux系统当前加载的库文件
+
+lsof |grep /lib
+
+17.查看当前系统某一硬件的驱动版本。比如网卡
+
+ethtool –i eth0
+
+18.DNS服务器有哪三种类型
+
+主 从 转发
+
+19.查看3306端口被谁占用
+
+lsof -i:3306
+
+20.查看占用内存最大的5个进程
+
+ps -aux|sort -k4nr|head -n 5
+
+21.查看占用内存最大的进程的PID和VSZ
+
+ps -aux|sort -k5nr|awk 'BEGIN{print "PID VSZ"}{print $2,$5}'|awk 'NR<3'
+
+22.看进程号为12的进程打开了哪些文件
+
+lsof -p 12
+
+23.同时执行a和b等a和b都执行完执行c
+
+#!/bin/bash
+./a.sh &
+./b.sh &
+wait
+echo adf
+
+
+24.snmpdf 通过SNMP监视远程主机的磁盘空间
+
+snmpdf -v 1 -c public localhost
+获取192.168.6.53的所有开放端口状态
+snmpnetstat -v 2c -c public -a 192.168.6.53
+
+25.简述编译Kernel的大体步骤
+
+(1)下载解压缩新版本的内核到/usr/src下 
+(2)将以前版本链接删除，建立新的连接
+(3)编译内核，编译模块，安装模块
+(4)修改grub.conf ，然后重启
+ 
+
+26.diff/patch的作用和用法
+
+命令diff A B > C ,一般A是原始文件，B是修改后的文件，C称为A的补丁文件。
+patch A C 就能得到B, 这一步叫做对A打上了B的名字为C的补丁
+
+27.执行/bin/myprog 返回0打印ok,返回1打印bad,返回2打印error,其他其他打印 wrony
+
+./bin/myprog
+if [[ $? = 0 ]];then
+	echo"OK"
+elif [[ $? =1 ]];then
+	echo"bad"
+else
+	echo"error"
+fi
+
+28.求一组数的最大值和最小值
+
+#!/bin/sh
+
+min=$1
+max=$1
+sum=$1
+shift
+
+while [ $# -gt 0 ]
+do
+if [ $min -gt $1 ]
+ then
+  min=$1
+f
+if [ $max -lt $1 ]
+ then
+  max=$1
+fi
+
+sum=`expr $sum +$1`
+
+shift
+done
+sum=`echo "$sum/5"`|bc -l
+echo min=$min
+echo max=$max
+echo aver=$sum
+
+28.执行可执行程序test并把输出和错误写到err.log
+
+./test > & err.log
+
+29.用telnet连接校内服务器mail.xiaonei.com  发一封信
+
+mail -v -s "hello" root@192.168.23.1
+
+30.添加路由表并查看
+
+route add -net 203.208.39.104 netmask 255.255.255.255 gw 192.168.1.1
+netstat –r
+
+
+31.正则匹配ip
+
+((25[0-5]|2[0-4]d|1dd|[1-9]d|d).){3}(25[0-5]|2[0-4]d|1dd|[1-9]d|[1-9])

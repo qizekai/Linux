@@ -1,0 +1,83 @@
+1、显示/etc目录下的所有目录
+		ls -d /etc/*/
+
+2、将文件/etc/a下中除了b文件外的所有文件压缩打包放到/home/a下，名字为a.gz
+		tar --exclude /etc/a/b -zPcvf /home/a/a.gz /etc/a 
+
+3、给一个脚本赋予执行权限的命令及选项
+		chmod 
+		   -R       	递归设置目录下所有权限
+		   --reference  参考一个文件的权限设置
+
+4、umask 022代表什么意思
+	文件创建的反向掩码
+		022表示默认创建新目录权限为755 
+		022表示默认创建新文件权限为644 
+	计算规则:
+		目录的默认权限:777-umask
+		文件的默认权限:666-umask(有奇数加一)
+
+5、如何查看test进程所打开的所有文件
+	方法一:
+		ps -ef |grep test
+	方法二:
+		lsof -p pid  #查看进程打开的文件
+		lsof -i :80  #查看打开端口
+
+6、获取eth0网卡上80端口的数据包信息
+	 tcpdump -i eth0 port 80
+
+7、删除 /a/b下的所有文件及目录
+	rm -rf /a/b/*
+
+8、常用的网络管理工具（5种以上）
+	iftop 
+	top
+	htop
+	ping
+	nestat
+	ss 
+	ifconfig
+	route
+	nc
+	tcpdump
+	nslookup
+	dig
+	ip
+
+9、ftp、https、smtp、pops、ssh的端口号
+	ftp 21
+	https 443
+	smtp 25
+	pop3 110
+	ssh 22
+
+
+11、请用iptables控制来自192.168.1.2主机的80端口请求
+	iptables -I INPUT -s 192.168.1.2 -p tcp --dport 80 -j ACCEPT
+
+12、请用shell脚本创建一个组class、一组用户，用户名为stdX X从01-30，并归属class组
+#!/bin/bash
+[ getent group class ] || groupadd class
+for i in `seq -w 30`
+do
+	[ getent passwd std$i ] || useradd -g class  std$i
+done
+
+13、在mysql客户端查询工具中，如何获取当前的所有连接进程信息
+	方法一:
+		mysql -uroot -pqikai -e 'show full processlist;'
+	方法二:
+		mysql -uroot -pqikai -e  "show variables like '%connect%'";
+	方法三：
+		 mysqladmin -uroot -pqikai status
+
+14、如何删除已满的数据库日志信息
+方法一:
+	在my.cnf中的[mysqld]段下面加入：expire-logs-days=7（设置自动清除7天的logs）,重启mysql；
+方法二:
+	SHOW MASTER LOGS;  	#mysql-bin.000002
+	FLUSH LOGS;
+	PURGE BINARY LOGS TO 'mysql-bin.000003';
+
+

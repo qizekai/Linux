@@ -1,0 +1,36 @@
+1、LINUX系统软件安装和卸载的常见方法
+	安装和卸载方法：
+		1.yum安装,yum remove 卸载
+		2.编译安装,直接停止服务,删除软件即可
+		3.二进制安装,直接停止服务,删除软件即可
+		4.rpm包安装,可以使用rpm卸载或者yum卸载
+2、Windows和LINUX常用的远程连接工具有那些
+	xshell
+	crt
+3、如何修改LINUX的IP地址、网关和主机名
+	临时修改
+		ifconfig eth0 ip 
+	永久修改:
+		vim /etc/sysconfig/script-network/ifcfg-eth0
+
+4、编写脚本实现以下功能；
+
+每天早上5点开始做备份
+要备份的是/var/mylog里所有文件和目录可以压缩进行备份
+备份可以保存到别一台器上192、168、1、2 FTP帐号 aaa 密码 bbb
+要示每天的备份文件要带有当天的日期标记
+
+
+* 5 * * * /bin/bash /qikai/bak_file.sh
+
+#!/bin/bash
+[ ! -d /var/mylog ] && exit 12
+tar zcvf /home/bak`date  +%F`.tar.gz /var/mylog
+
+5、IPTABLES相关的命令
+
+
+6、mysql相关的题
+新安装MYSQL后怎样提升MYSQL的安全级别
+MYSQL的主从原理，怎么配置文件
+为MYSQL添加一个用户

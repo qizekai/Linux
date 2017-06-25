@@ -1,0 +1,1698 @@
+
+1 企业Shell面试题1：批量生成随机字符文件名案例
+
+使用for循环在/oldboy目录下批量创建10个html文件，其中每个文件需要包含10个随机小写字母加固定字符串oldboy，名称示例如下：
+[root@oldgirl C19]# ls /oldboy
+apquvdpqbk_oldboy.html  mpyogpsmwj_oldboy.html  txynzwofgg_oldboy.html
+bmqiwhfpgv_oldboy.html  mtrzobsprf_oldboy.html  vjxmlflawa_oldboy.html
+jhjdcjnjxc_oldboy.html  qeztkkmewn_oldboy.html
+jpvirsnjld_oldboy.html  ruscyxwxai_oldboy.html
+解答：
+方法一:
+#!/bin/bash
+Path=/app
+[ -d $Path ] || mkdir $Path
+  
+for i in `seq 10`
+  do
+     char=`echo $RANDOM|md5sum|cut -c 2-11|tr[0-9] [a-j]`
+     touch $Path/${char}_oldboy.html
+done
+
+生成随机数的几种方法:
+tr -dc 'a-zA-Z0-9' < /dev/urandom |head -c10
+cat /dev/urandom  |strings |tr -d '[:space:]' |head -c10
+cat /proc/sys/kernel/random/uuid
+echo $RANDOM|md5sum|head -c10
+openssl rand -base64 8
+echo `date +%s%N`
+
+方法二:
+#!/bin/bash
+. /etc/init.d/functions
+[ -d /oldboy ]|| mkdir -p /oldboy
+cd /oldboy
+for i in `seq 10`
+do
+    touch `echo $RANDOM|md5sum|cut -c 1-10|tr "[0-9]" "[a-z]"`_oldboy.html
+done
+
+
+2 企业Shell面试题2：批量改名特殊案例
+
+将以上面试题19.1.1中结果文件名中的oldboy字符串全部改成oldgirl(最好用for循环实现),并且将扩展名html全部改成大写。
+解答：
+
+
+方法一:
+ #!/bin/bash
+Path=/app
+[ -d $Path ] && cd $Path
+for file in `ls $Path`
+ do
+     mv $file `echo $file|sed -e "s#oldboy#oldgirl#g" -e "s#html#HTML#g" `
+done
+
+方法二:
+
+#!/bin/bash
+cd /oldboy
+for i in `cd /oldboy`
+do
+   rename "oldboy" "oldgirl" *.html|rename "html" "HTML" *.html
+done
+
+
+3 企业Shell面试题3：批量创建特殊要求用户案例
+
+批量创建10个系统帐号oldboy01-oldboy10并设置密码（密码为随机数，要求字符和数字等混合）。
+不用for循环的实现思路：http://user.qzone.qq.com/49000448/blog/1422183723
+解答：
+ 
+
+
+方法一:
+
+ #! /bin/bash
+. /etc/init.d/functions
+  
+Path=/server/scripts
+UserDb=$Path/user.db
+FailDb=$Path/fail_user.db
+  
+[ -d "$Path" ] || mkdir-p $Path
+[ -f "$UserDb" ] ||touch $UserDb
+[ -f "$FailDb" ] ||touch $FailDb
+  
+for n in $(seq -w 10)
+ do
+    passwd=`echo $(date +%t%N)$RANDOM|md5sum|cut -c 2-9`
+    useradd oldboy$n >&/dev/null&& user_status=$?
+    echo "$passwd"|passwd --stdin oldboy$n >&/dev/null && pass_status=$?
+    if [ $user_status -eq 0 -a $pass_status -eq 0 ];then
+       action "adduser oldboy$n"/bin/true
+       echo -e "user:\toldboy$npass:$passwd" >>$UserDb
+    else
+       action "adduser oldboy$n"/bin/false
+       echo -e "user:\toldboy$npass:$passwd" >>$FailDb
+    fi
+done
+
+方法二:
+#!/bin/bash
+[ $UID -ne 0 ]&& echo "only root run"&&exit 1
+[ -f /etc/init.d/functions ]&& . /etc/init.d/functions
+isexist() {
+  result=$(grep -w "^$1" /etc/passwd|wc -l)
+  if [ $result -ne 0  ];then
+    echo "user $1 is exist!!"
+    ret 1 "create user is  "
+    continue
+  fi
+}
+ret() {
+  if [ $1 -eq 0 ];then
+    action "$2" /bin/true
+  else
+    action "$2" /bin/false
+  fi
+}
+create() {
+  for i in $(seq -w 10)
+  do
+    user="oldboy$i"
+    isexist $user
+    pass=$(cat /proc/sys/kernel/random/uuid|md5sum|cut -c 1-10)
+    useradd $user&&echo $pass|passwd --stdin $user &>/dev/null
+    ret $? "crate user $user"
+    echo "$user $pass" >> /tmp/user.list
+  done
+}
+main() {
+  create
+}
+main
+
+
+4 企业Shell面试题4：扫描网络内存活主机案例
+
+写一个Shell脚本，判断10.0.0.0/24网络里，当前在线的IP有哪些？
+解答：
+
+方法一:
+
+!/bin/sh
+for n in `seq 255`
+do
+  ping -c1 10.0.0.$n &>/dev/null
+  if [ $? -eq 0 ]
+  then
+      echo "10.0.0.$n is up ">>/tmp/uplist.log
+  else
+      echo "10.0.0.$n is down ">>/tmp/downlist.log
+  fi
+done
+ 
+方法二:
+
+#!/bin/sh
+#
+[ -f /etc/init.d/functions ] && . /etc/init.d/functions
+function IP_count(){
+  for n in 10.0.0.{0..255}
+   do
+    IP_check=`nmap -sP $n|grep "Host is up"|wc -l`
+    if [ ${IP_check} -eq 1 ];then
+      action "$n" /bin/true
+      let i+=1
+    fi
+  done
+}
+function main(){
+  IP_count
+  echo "The total number of online IP Addresses is " $i
+}
+main
+
+5 企业Shell面试题5：解决DOS攻击生产案例
+
+写一个Shell脚本解决DOS攻击生产案例。
+请根据web日志或者或者网络连接数，监控当某个IP并发连接数或者短时内PV达到100（读者根据实际情况设定），即调用防火墙命令封掉对应的IP。防火墙命令为：iptables -I INPUT -s IP地址 -j DROP。
+解答：
+
+
+方法一:
+#!/bin/bash 
+log=/tmp/tmp.log
+  
+[ -f $log ] || touch $log
+  
+function add_iptables(){
+    while read line
+        do
+          ip=`echo $line|awk '{print $2}'`
+          count=`echo $line|awk '{print $1}'`
+            if [ $count -gt 100 ] && [`iptables -L -n|grep "$ip"|wc -l` -lt 1 ]
+             then
+                iptables -I INPUT -s $ip -j DROP
+                echo "$line is dropped" >>/tmp/droplist.log
+            fi
+        done< $log
+}
+  
+  
+function main(){
+    while true
+           do
+             #awk '{print $1}' access.log|grep-v "^$"|sort|uniq -c >$log
+             netstat -an|grep EST|awk -F '[:]+' '{print $6}'|sort|uniq -c >$log
+             add_iptables
+             sleep 180
+           done
+}
+  
+main
+
+方法二:
+#!/bin/bash
+netstat -na|grep EST|awk -F "[ :]+" '{print $6}'|sort|uniq -c >>/tmp/a.log
+ while true
+    do
+    grep EST a.log|awk -F '[ :]+' '{print $6}'|sort|uniq -c >/tmp/tmp.log
+    exec </tmp/tmp.log
+    while read line
+    do
+        ip=`echo $line|awk "{print $2}"`
+        count=`echo $line|awk "{print $1}"`
+        if [  $count -gt 100 ] && [ `iptables -L -n|grep $ip|wc -l` -lt 1  ]
+        then
+            iptables -I INPUT -s $ip -j DROP                   //-I 将其封杀在iptables显示在第一条
+            echo "$line is dropped" >>/tmp/dropip.log
+        fi
+    done
+    sleep 180
+    done
+
+方法三:
+
+#!/bin/sh
+#
+[ -f /etc/init.d/functions ] && . /etc/init.d/functions
+IP_file="/server/scripts/ddos.txt"
+IP_filter_command="iptables -I INPUT -j DROP -s"
+IP_recover_command="iptables -D INPUT -j DROP -s"
+function IP_check(){
+  grep "EST"  ${IP_file}|awk -F "[ |:]+" '{print $6}'|sort |uniq -c|sort -rn -k1 > /server/scripts/ip.txt
+}
+function IP_filter(){
+   exec < /server/scripts/ip.txt
+   while read line
+   do
+     IP_count=`echo $line|awk '{print $1}'`
+     IP=`echo $line|awk '{print $2}'`
+     IP_fil=`iptables -L -n|grep "\b${IP}\b"|wc -l`
+     if [ ${IP_count} -gt 25 -a ${IP_fil} -eq 0 ];then
+        ${IP_filter_command} ${IP}
+        echo "${IP}" >> /server/scripts/ip_filtered.txt
+        action "Filter ${IP}" /bin/true
+     fi
+   done
+}
+function IP_recover(){
+   exec < /server/scripts/ip.txt
+   while read line
+   do
+     IP_count=`echo $line|awk '{print $1}'`
+     IP=`echo $line|awk '{print $2}'`
+     IP_fil=`iptables -L -n|grep "\b${IP}\b"|wc -l`
+     if [ ${IP_count} -le 25 -a ${IP_fil} -eq 1 ];then
+        ${IP_recover_command} ${IP}
+        echo "${IP}" >> /server/scripts/ip_filtered.txt
+        action "Recover ${IP}" /bin/true
+     fi
+   done
+}
+function main(){
+    case "$1" in
+      filter)
+      IP_check
+      echo "$(date +%F-%H:%M:%S) filtered by $(whoami)" >> /server/scripts/ip_filtered.txt
+      IP_filter
+      ;;
+      recover)
+      IP_check
+      echo "$(date +%F-%H:%M:%S) recovered by $(whoami)" >> /server/scripts/ip_filtered.txt
+      IP_recover
+      ;;
+      *)
+      echo "USAGE:$0 {filter|recover}"
+      exit 1
+    esac
+}
+main $*
+
+ 
+6企业Shell面试题6：MySQL数据库分库备份
+
+请实现对MySQL数据库进行分库备份，用脚本实现。
+解答：
+
+方法一:
+#!/bin/bash
+MysqlUser=root
+PassWord=oldboy123
+Port=3306
+Socket="/data/$Port/mysql.sock"
+MysqlCmd="mysql -u$MysqlUser-p$PassWord -S $Socket"
+Database=`$MysqlCmd -e "showdatabases;"|egrep -v "Database|_schema|mysql"`
+MysqlDump="mysqldump-u$MysqlUser -p$PassWord -S $Socket"
+IP=`ifconfig eth0|awk -F "[:]+" 'NR==2 {print $4}'`
+BackupDir=/backup/$IP
+  
+[ -d $BackupDir ] || mkdir -p$BackupDir
+  
+  
+for dbname in $Database
+  do
+     $MysqlDump --events -B $dbname|gzip>/$BackupDir/${dbname}_$(date +%F)_bak.sql.gz
+done
+
+方法二:
+#!/bin/bash
+. /etc/init.d/functions
+PORT='3306'
+BAKUPDIR='/server/backup'
+MYSQLUSER='root'
+MYSQLPASS='oldboy'
+SOCK="/data/${PORT}/mysql.sock"
+CMDDIR="/application/mysql/bin"
+MYSQL="${CMDDIR}/mysql -u${MYSQLUSER} -p${MYSQLPASS} -S${SOCK}"
+DBNAME=`${MYSQL} -e "show databases;"|sed 1d|egrep -v "_schema|mysql"`
+AYYAYDB=($DBNAME)
+MYSQLDUMP="${CMDDIR}/mysqldump -u${MYSQLUSER} -p${MYSQLPASS} -S${SOCK}"
+function BAKDB(){
+DBNAME=`${MYSQL} -e "show databases;"|sed 1d|egrep -v "_schema|mysql"`
+AYYAYDB=($DBNAME)
+    for((n=0;n<${#AYYAYDB[*]};n++))
+           do
+    TABLE_BAK_DIR="${BAKUPDIR}/${AYYAYDB[$n]}"
+    TABLENAME=`${MYSQL} -e "show tables from ${AYYAYDB[$n]};"|sed 1d`
+    ARRAYTABLE=(${TABLENAME})
+        for((i=0;i<${#ARRAYTABLE[*]};i++))
+            do
+        [ -d ${TABLE_BAK_DIR}  ] || mkdir ${TABLE_BAK_DIR} -p
+        ${MYSQLDUMP} ${AYYAYDB[$n]} ${ARRAYTABLE[$i]} |gzip >${TABLE_BAK_DIR}/${ARRAYTABLE[$i]}_$(date +%T-%F)_bak.sql.gz
+        RETVAL=$?
+        if [ $RETVAL -eq 0 ]
+            then
+                echo "${AYYAYDB[$n]}_${ARRAYTABLE[$i]} bak successfull `date +%F-%T` " >>/tmp/DB_table_bakstatus.log
+            else
+                echo "${AYYAYDB[$n]}_${ARRAYTABLE[$i]} bak fail `date +%F-%T` " >>/tmp/DB_table_bakstatus.log
+        fi 
+        done 
+           done
+    mail -s "DB STATUS" www.abcdocker.com@qq.com < /tmp/DB_table_bakstatus.log
+    return
+}
+function DBstatus(){
+[ -d ${BAKUPDIR} ] || mkdir ${BAKUPDIR} -p
+${MYSQL} -e "show full processlist;" &> /dev/null
+RETVAL=$?
+if [ $RETVAL -eq 0 ]
+  then
+        >/tmp/DB_table_bakstatus.log
+        BAKDB 
+  else
+       echo "DB BAD!!!  `date +%F-%T`" | mail -s "DB BAD!!!" www.abcdocker.com@qq.com
+        exit
+fi
+}
+DBstatus
+
+7企业Shell面试题7：MySQL数据库分库分表备份
+
+如何实现对MySQL数据库进行分库加分表备份，请用脚本实现。
+解答：
+
+方法一:
+
+#!/bin/bash
+MysqlUser=root
+PassWord=oldboy123
+Port=3306
+Socket="/data/$Port/mysql.sock"
+MysqlCmd="mysql -u$MysqlUser-p$PassWord -S $Socket"
+Database=`$MysqlCmd -e "showdatabases;"|egrep -v "Database|_schema|mysql"`
+MysqlDump="mysqldump-u$MysqlUser -p$PassWord -S $Socket"
+IP=`ifconfig eth0|awk -F "[:]+" 'NR==2 {print $4}'`
+BackupDir=/backup/$IP
+  
+[ -d $BackupDir ] || mkdir -p$BackupDir
+  
+  
+for dbname in $Database
+  do
+     [ ! -d /$BackupDir/$dbname ] &&mkdir -p /$BackupDir/$dbname
+     TABLE=`$MysqlCmd -e "show tables from$dbname;"|sed '1d'`
+     for table in $TABLE
+        do
+          $MysqlDump $dbname $table|gzip>/$BackupDir/$dbname/${dbname}_${table}_$(date +%F).sql.gz
+     done
+done
+
+方法二:
+#!/bin/bash
+. /etc/init.d/functions
+PORT='3306'
+BAKUPDIR='/server/backup'
+MYSQLUSER='root'
+MYSQLPASS='oldboy'
+SOCK="/data/${PORT}/mysql.sock"
+CMDDIR="/application/mysql/bin"
+MYSQL="${CMDDIR}/mysql -u${MYSQLUSER} -p${MYSQLPASS} -S${SOCK}"
+DBNAME=`${MYSQL} -e "show databases;"|sed 1d|egrep -v "_schema|mysql"`
+AYYAYDB=($DBNAME)
+MYSQLDUMP="${CMDDIR}/mysqldump -u${MYSQLUSER} -p${MYSQLPASS} -S${SOCK}"
+function BAKDB(){
+    for((n=0;n<${#AYYAYDB[*]};n++))
+           do
+        ${MYSQLDUMP} --events -B ${AYYAYDB[$n]} |gzip >${BAKUPDIR}/${AYYAYDB[$n]}_$(date +%T-%F)_bak.sql.gz
+        RETVAL=$?
+        if [ $RETVAL -eq 0 ]
+            then
+                echo "${AYYAYDB[$n]} bak successfull `date +%F-%T` " >>/tmp/DBbakstatus.log
+            else
+                echo "${AYYAYDB[$n]} bak fail `date +%F-%T` " >>/tmp/DBbakstatus.log
+        fi     
+           done
+    mail -s "DB STATUS" www.abcdocker.com@qq.com < /tmp/DBbakstatus.log
+    return
+}
+function DBstatus(){
+[ -d ${BAKUPDIR} ] || mkdir ${BAKUPDIR} -p
+${MYSQL} -e "show full processlist;" &> /dev/null
+RETVAL=$?
+if [ $RETVAL -eq 0 ]
+  then
+        >/tmp/DBbakstatus.log
+        BAKDB 
+  else
+       echo "DB BAD!!!  `date +%F-%T`" | mail -s "DB BAD!!!" www.abcdocker.com@qq.com
+        exit
+fi
+}
+DBstatus
+
+
+8企业Shell面试题8：筛选符合长度的单词案例
+
+利用bash for循环打印下面这句话中字母数不大于6的单词(某企业面试真题)。
+I am oldboy teacher welcome to oldboy trainingclass
+用至少两种方法实现！
+解答：
+
+ #!/bin/bash
+echo "-------wc -L----"
+for word in I am oldboy teacherwelcome to oldboy training class.
+  do
+     if [ `echo ${word}|wc -L` -le 6 ]
+     then
+        echo $word
+     fi
+done
+  
+echo"-----{#word}-----"
+for word in I am oldboy teacherwelcome to oldboy training class.
+  do
+     if [ ${#word} -le 6 ]
+     then
+        echo $word
+     fi
+done
+  
+  
+echo "-----exprlength-----"
+for word in I am oldboy teacherwelcome to oldboy training class.
+  do
+     if [ `expr length "$word"` -le 6]
+     then
+        echo $word
+     fi
+done
+  
+echo"-----{word:0:6}-----"
+for word in I am oldboy teacherwelcome to oldboy training class.
+do
+    if [ "$word" =="${word:0:6}" ]
+     then
+        echo $word
+    fi
+done
+  
+echo "-----awk-----"
+echo "I am oldboy teacherwelcome to oldboy training class"|awk '{for(i=1;i<=NF;i++)if(length($i)<=6)print $i}'
+  
+echo "-----awk2-----"
+echo -n "I am oldboy teacherwelcome to oldboy training class." | awk 'BEGIN {RS=FS} length($0)<=6{print $0}'
+  
+  
+echo "-----数组-----"
+arr=(I am oldboy teacher welcometo oldboy training class.)
+for word in ${arr[@]}
+do
+  if [ ${#word} -le 6 ]
+  then
+      echo $word
+  fi
+done
+  
+echo-----------------------------
+for((i=0;i<${#arr[*]};i++))
+do
+    if [ ${#arr[$i]} -le 6 ]
+    then
+       echo ${arr[$i]}
+    fi
+done
+[root@shell scripts]# shlength.sh  
+-------wc -L----
+I
+am
+oldboy
+to
+oldboy
+class.
+-----{#word}-----
+I
+am
+oldboy
+to
+oldboy
+class.
+-----expr length-----
+I
+am
+oldboy
+to
+oldboy
+class.
+-----{word:0:6}-----
+I
+am
+oldboy
+to
+oldboy
+class.
+-----awk-----
+I
+am
+oldboy
+to
+oldboy
+class
+-----awk2-----
+I
+am
+oldboy
+to
+oldboy
+class.
+-----数组-----
+I
+am
+oldboy
+to
+oldboy
+class.
+-----------------------------
+I
+am
+oldboy
+to
+oldboy
+class.
+
+
+
+
+9企业Shell面试题9：MySQL主从复制异常监控案例
+
+开发一个守护进程脚本每30秒监控MySQL主从复制是否异常（包括不同步以及延迟），如果异常，则发送短信并发送邮件给管理员存档。
+提示：如果没主从复制的环境,可以把下面文本放到文件里读取来模拟主从复制状态：
+
+解答：
+#!/bin/sh
+#oldboy linux training
+#2015-05-17
+#说明：本脚本来自老男孩linux21期学员张耀开发！
+# Source function library.
+. /etc/init.d/functions
+# Defined variables
+MysqlUser=root
+MysqlPass=oldboy123
+MysqlPort=3307
+Mysqlsock=/data/$MysqlPort/mysql.sock
+ErrorNo=(1158 1159 1008 1007 1062)
+errorlog=/tmp/error_skip.log
+MysqlCmd="/application/mysql/bin/mysql -u$MysqlUser -p$MysqlPass -S $Mysqlsock"
+# Judge mysql server is ok?
+[ -S $Mysqlsock ] ||{
+  echo "Maybe MySQL have someting wrong"
+  exit 1
+}
+# Defined skip error Functions
+function error_skip(){
+  local flag
+  flag=0
+  for num in ${ErrorNo[@]}
+    do
+      if [ "$1" == "$num" ];then
+         $MysqlCmd -e'stop slave;set global sql_slave_skip_counter=1;start slave;'
+         echo "$(date +%F_%R) $1" >>$errorlog
+      else
+  echo "$(date +%F_%R) $1" >>$errorlog
+         ((flag++))
+      fi
+  done
+  [ "$flag" == "${#ErrorNo[@]}" ] &&{
+    action "MySQL Slave" /bin/false
+    uniq $errorlog|mail -s "MySQL Slave is error" 12345678@qq.com
+  }
+}
+# Defined check slave Functions
+function check_slave(){
+  MyResult=`$MysqlCmd -e'show slave status\G'|egrep '_Running|Behind_Master|SQL_Errno' |awk '{print $NF}'`
+  array=($MyResult)
+  if [ "${array[0]}" == "Yes" -a "${array[1]}" == "Yes" -a "${array[2]}" == "0" ]
+    then
+    action "MySQL Slave" /bin/true||error_skip ${array[3]}
+  fi
+}
+# Defined main Functions
+function main(){
+  while true
+     do
+       check_slave
+       sleep 60
+  done
+}
+main
+
+10企业Shell面试题10：比较整数大小经典案例
+
+综合实战案例：开发shell脚本分别实现以脚本传参以及read读入的方式比较2个整数大小。
+用条件表达式（禁止if）进行判断并以屏幕输出的方式提醒用户比较结果。
+注意：一共是开发2个脚本。当用脚本传参以及read读入的方式需要对变量是否为数字、并且传参个数不对给予提示。
+解答：
+ 
+脚本一:
+
+#!/bin/bash
+[[ $# -lt 2 ]] && { echo "The count int less 2";exit 2; }
+for i in `seq 2`
+do
+	[[ ! $i =~ [0-9]+ ]] && echo "not ringht" && exit 20
+done
+[[ $1 -gt $2 ]] && echo $1 is biger || echo $2 is bigger && exit 3
+[[ $1 -eq $2 ]] && echo "The string is eq" && exit 3
+
+脚本二:
+
+#!/bin/bash
+function Add(){
+    [[ ! $a ]] && a=`echo $1` && return 
+    [[ ! $b  ]]&& b=`echo $1`
+    [[ $a -gt $b ]] && { echo $a is bigger; exit 5; } || { echo $b is bigger;exit 6; }
+}
+
+while :
+do
+	read -p "please input the int" intname	
+	[[ ! $intname =~ [0-9]+ ]] && { echo "The num is error"; } || Add $intname
+done
+
+
+11企业Shell面试题11：菜单自动化软件部署经典案例
+
+综合实例：打印选择菜单，按照选择一键安装不同的Web服务。
+示例菜单：
+[root@oldboy scripts]# shmenu.sh
+    1.[install lamp]
+    2.[install lnmp]
+    3.[exit]
+    pls input the num you want:
+要求：
+1、当用户输入1时，输出“startinstalling lamp.提示”然后执行/server/scripts/lamp.sh，脚本内容输出"lampis installed"后退出脚本，工作中就是正式lamp一键安装脚本；
+2、当用户输入2时，输出“startinstalling lnmp.提示” 然后执行/server/scripts/lnmp.sh输出"lnmpis installed"后退出脚本，工作中就是正式lnmp一键安装脚本；
+3、当输入3时，退出当前菜单及脚本；
+4、当输入任何其它字符，给出提示“Input error”后退出脚本；
+5、要对执行的脚本进行相关的条件判断，例如：脚本文件是否存在，是否可执行等判断，尽量用上前面讲解的知识点。
+解答：
+#!/bin/bash
+cat <<EOF
+1.[install lamp]
+2.[install lnmp]
+3.[exit]
+pls input the num you want:
+EOF
+read -p "please input number 1-3:" a
+lamp() {
+if [ -f /server/scripts/lamp.sh ];then
+  echo "startinstalling lamp."
+  sleep 2
+  sh /server/scripts/lamp.sh
+else
+  echo "file does not exist"
+fi
+exit 0
+}
+lnmp () {
+if [ -f /server/scripts/lnmp.sh ];then
+  echo "startinstalling lnmp."
+  sleep 3
+  sh /server/scripts/lnmp.sh
+else
+  echo "file does not exist"
+fi
+exit 0
+}
+
+case $a in
+  1)
+    lamp
+    ;;
+  2)
+    lnmp
+    ;;
+  3)
+    exit 0
+    ;;
+  *)
+    echo "pls input the num you want:"
+    ;;
+esac
+
+
+12 企业Shell面试题12：Web及MySQL服务异常监测案例
+
+用if条件语句实现对Nginx Web服务以及MySQL数据库服务是否正常进行检测，如果服务未启动，则启动相应服务。
+解答：
+
+
+#!/bin/bash
+[ -f /etc/init.d/functions ] && . /etc/init.d/functions
+check_httpd(){
+count=`ps -ef|grep nginx|grep -v grep|wc -l`
+      if [ "$count" -ne 0 ]
+      then
+        action "nginx is ok" /bin/true
+      else
+        action "nginx is dead" /bin/false
+      fi
+    }
+    check_httpd_port(){
+      count=`netstat -lntup|grep 8080|wc -l`
+      if [ "$count" -ne 0 ]
+      then
+        action "nginx is ok" /bin/true
+      else
+        action "nginx is dead" /bin/false
+      fi
+    }
+
+
+13 企业Shell面试题13：监控Memcached缓存服务是否正常
+
+监控Memcached缓存服务是否正常，模拟用户（web客户端）检测。
+使用nc命令加上set/get来模拟检测。
+解答：
+#!/bin/bash
+########################
+#date:2016-07-17       #
+#author:fxqiao         #
+#QQ:827724746          #
+#E-mail:qfx1995@163.com#
+########################
+#echo -ne "\033[0;33m"
+echo -ne "\E[1;32m"
+cat<<EOT
+                                  _oo0oo_
+                                 088888880
+                                 88" . "88
+                                 (| -_- |)
+                                  0\ = /0
+                               ___/'---'\___
+                             .' \\\\|     |// '.
+                            / \\\\|||  :  |||// \\
+                           /_ ||||| -:- |||||- \\
+                          |   | \\\\\\  -  /// |   |
+                          | \_|  ''\---/''  |_/ |
+                          \  .-\__  '-'  __/-.  /
+                        ___'. .'  /--.--\  '. .'___
+                     ."" '<  '.___\_<|>_/___.' >'  "".
+                    | | : '-  \'.;'\ _ /';.'/ - ' : | |
+                    \  \ '_.   \_ __\ /__ _/   .-' /  /
+                ====='-.____'.___ \_____/___.-'____.-'=====
+                                  '=---='
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                        佛祖保佑    iii    服务正常
+EOT
+echo -ne "\E[0m"
+[ -f /etc/init.d/functions ] && . /etc/init.d/functions
+###variables
+RETVAL=0
+###color
+RED_COLOR='\E[1;31m'
+GREEN_COLOR='\E[1;32m'
+YELLOW_COLOR='\E[1;33m'
+BLUE_COLOR='\E[1;34m'
+RES='\E[0m'
+####menu list
+menu() {
+cat <<EOF
+############################
+  1 memcached status
+  2 memcached stop
+  3 memcached get_hits
+  4 quit
+EOF
+}
+status() {
+Set=$(printf "set key1 0 0 6\r\noldboy\r\n"|nc 127.0.0.1 11211|grep STORED|wc -l)
+Get=$(printf "get key1\r\n"|nc 127.0.0.1 11211|grep oldboy|wc -l)
+Port=$(netstat -lntup|grep memcached|wc -l)
+  if [ $Port -ge 4 ];then
+     Num=$(expr $Set + $Get)
+     if [ $Num -eq 2 ];then
+        action "Memcached server is running" /bin/true
+     else
+        action "Memcached server is not normal" /bin/false
+     fi
+  else
+     action "Memcached server is not running" /bin/false
+     read -t 10 -p "Memcached server whether open:[y/n]:" b
+     if [ "$b" == "y" -o "$b" == "Y" ];then
+        /usr/bin/memcached -m 16m -p 11211 -d -u root -c 8192
+        action "Memcached server is starting" /bin/true
+     elif [ "$b" == "n" -o "$b" == "N" ];then
+        echo -e "$YELLOW_COLOR Goodbye.............$RES"
+     fi
+  fi
+  return $RETVAL
+}
+stop() {
+Port=$(netstat -lntup|grep memcached|wc -l)
+  if [ $Port -ge 4 ];then
+     pkill memcached &>/dev/null
+     RETVAL=$?
+     if [ $RETVAL -eq 0 ];then
+        action "Memcached server is stopping" /bin/true
+     else
+        action "Memcached server is stopping" /bin/false
+     fi
+  else
+     action "Memcached server not running" /bin/false
+  fi
+}
+get_hits() {
+Cmd_get=$(printf "stats\r\n"|nc 127.0.0.1 11211|grep "cmd_get"|awk '{print $3}')
+Get_hits=$(printf "stats\r\n"|nc 127.0.0.1 11211|grep "get_hits"|awk '{print $3}')
+Get_misses=$(printf "stats\r\n"|nc 127.0.0.1 11211|grep "get_misses"|awk '{print $3}')
+Port=$(netstat -lntup|grep memcached|wc -l)
+  if [ $Port -ge 4 ];then
+     echo "A total of cmd_get is $Cmd_get"
+     sleep 1
+     echo "A total of get_hits is $Get_hits"
+     sleep 1
+     echo "A total of get_misses is $Get_misses"
+  else
+     action "Memcached is not running" /bin/false
+  fi
+  return $RETVAL
+}
+main() {
+while true
+do
+menu
+read -t 10 -p "Please input number:" a
+expr $a + 1 &>/dev/null
+if [ $? -ne 0 ];then
+   echo -e "$BLUE_COLOR Please input error,not int $RES"
+   exit 1
+fi
+case "$a" in
+  1)
+    status
+    RETVAL=$?
+    ;;
+  2)
+    stop
+    RETVAL=$?
+    ;;
+  3)
+    get_hits
+    RETVAL=$?
+    ;;
+  4)
+    clear
+        echo "##############################################"
+    echo -e "$GREEN_COLOR `figlet GoodBye` $RES"
+    echo "##############################################"
+    exit 0
+    ;;
+  *)
+    echo -e "$RED_COLOR input error $RES"
+esac
+done
+}
+main
+exit $RETVAL  
+
+
+14 企业Shell面试题14：开发脚本入侵检测与报警案例
+
+面试及实战考试题：监控web站点目录（/var/html/www）下所有文件是否被恶意篡改（文件内容被改了）
+如果有就打印改动的文件名（发邮件），定时任务每3分钟执行一次。
+解答：
+
+[root@db02 tmp]# cat html.sh
+#!/bin/sh
+html_dir=/var/html/www
+html_file=`find /var/html/www -type f`
+check_dir=/tmp/checkdir
+[ ! -d $check_dir ] && mkdir $check_dir
+for n in $html_file
+do
+  md5sum $n >>$check_dir/1.txt
+done
+while true
+do
+  md5sum -c $check_dir/1.txt|grep FAILED >>$check_dir/2.txt
+  [ -s $check_dir/2.txt ] && \
+  echo "`cat $check_dir/2.txt`"|mail -s "date:`date +%F-%H:%M:%S` Web is dangerous" 18576749166@163.com
+  > $check_dir/2.txt
+sleep 3
+done
+
+15 企业Shell面试题15：开发Rsync服务启动脚本案例
+
+写网络服务独立进程模式下Rsync的系统启动脚本，例如：/etc/init.d/rsyncd {start|stop|restart}。
+要求：
+1.要使用系统函数库技巧。
+2.要用函数，不能一坨SHI的方式。
+3.可被chkconfig管理。
+解答：
+ #!/bin/bash
+##################
+#I am yuhongcong
+#qq:604419314
+#################
+# Comments to support chkconfig on RedHat Linux
+# chkconfig: 2345 64 36
+status1=$(ps -ef | egrep "rsync --daemon.*rsyncd.conf" | grep -v 'grep')
+pidfile="/etc/rsync/rsyncd.pid"
+start_rsync="rsync --daemon --config=/etc/rsync/rsyncd.conf"
+function rsyncstart() {
+    if [ "${status1}X" == "X" ];then
+        rm -f $pidfile      
+        ${start_rsync}  
+        status2=$(ps -ef | egrep "rsync --daemon.*rsyncd.conf" | grep -v 'grep') 
+        if [  "${status2}X" != "X"  ];then
+            echo "rsync service start.......OK"
+        fi
+    else
+        echo "rsync service is running !"   
+    fi
+}
+function rsyncstop() {
+    if [ "${status1}X" != "X" ];then
+        kill -9 $(cat $pidfile)
+        status2=$(ps -ef | egrep "rsync --daemon.*rsyncd.conf" | grep -v 'grep') 
+        if [ "${statusw2}X" == "X" ];then
+            echo "rsync service stop.......OK"
+        fi
+    else
+        echo "rsync service is not running !"   
+    fi
+}
+function rsyncstatus() {
+    if [ "${status1}X" != "X" ];then
+        echo "rsync service is running !"  
+    else
+         echo "rsync service is not running !" 
+    fi
+}
+function rsyncrestart() {
+    if [ "${status1}X" == "X" ];then
+               echo "rsync service is not running..."
+               rsyncstart
+        else
+               rsyncstop
+               rsyncstart   
+        fi      
+} 
+case $1 in
+        "start")
+               rsyncstart
+                ;;
+        "stop")
+               rsyncstop
+                ;;
+        "status")
+               rsyncstatus
+               ;;
+        "restart")
+               rsyncrestart
+               ;;
+        *)
+          echo
+                echo  "Usage: $0 start|stop|restart|status"
+          echo
+esac
+
+
+
+
+16 企业Shell面试题16：开发MySQL多实例启动脚本
+
+开发MySQL多实例启动脚本：
+已知MySQL多实例启动命令为：mysqld_safe --defaults-file=/data/3306/my.cnf&
+停止命令为：mysqladmin -u root -poldboy123 -S/data/3306/mysql.sock shutdown
+请完成mysql多实例启动启动脚本的编写
+要求：用函数，case语句、if语句等实现。
+解答：
+
+
+
+
+17 企业Shell面试题17：天津项目学生实践抓阄案例
+
+好消息，老男孩培训学生外出企业项目实践机会（第6次）来了（本月中旬），但是，名额有限，队员限3人（班长带队）。
+因此需要挑选学生，因此需要一个抓阄的程序：
+要求：
+1、执行脚本后，想去的同学输入英文名字全拼，产生随机数01-99之间的数字，数字越大就去参加项目实践，前面已经抓到的数字，下次不能在出现相同数字。
+2、第一个输入名字后，屏幕输出信息，并将名字和数字记录到文件里，程序不能退出继续等待别的学生输入。
+ 解答：
+
+ #!/bin/sh
+> /tmp/temp.txt
+input(){
+while true
+do
+  read -p "pls input your name:" name
+  if [ -z $name ]
+  then
+    continue
+  elif [ $name == "0" ]
+  then
+    break
+  fi
+  rand=$((RANDOM%100))
+  echo -e $rand"\t"$name >>/tmp/temp.txt
+done
+}
+output(){
+cat /tmp/temp.txt |sort -n -k1 -r|sed '3a#################'
+}
+main(){
+input
+output
+}
+main
+
+
+
+18 企业Shell面试题18：破解RANDOM随机数案例
+
+已知下面的字符串是通过RANDOM随机数变量md5sum后，再截取一部分连续字符串的结果，请破解这些字符串对应的使用md5sum处理前的RANDOM对应的数字？
+21029299
+00205d1c
+a3da1677
+1f6d12dd
+890684b
+解答：
+方法一：
+
+#!/bin/bash
+. /etc/init.d/functions
+MD5PASS=(
+21029299
+00205d1c
+a3da1677
+1f6d12dd
+890684b
+)
+for ((n=0;n<=32767;n++))
+do
+for((i=0;i<${#MD5PASS[*]};i++))
+do
+        md5=`echo $n | md5sum|cut -c 1-8`
+        if [ "$md5" == ${MD5PASS[$i]} ]
+                then
+                echo "$n" "${MD5PASS[$i]} "
+                fi
+done
+done
+方法二：
+
+[root@openvpn-server ~]# cat md5sum.sh
+#!/bin/sh
+a=(
+21029299
+00205d1c
+a3da1677
+1f6d12dd
+890684b
+)
+for i in `seq 32767`
+do
+   source=`echo $i|md5sum|cut -c 1-8`
+   for j in ${a[@]}
+   do
+   if [ $source == $j ];then
+      echo $source "-->" $i
+   fi
+   done
+done
+
+方法三：
+
+[root@m01 ~]# cat mianshiti6.sh
+#!/bin/bash
+mima=(
+21029299
+00205d1c
+a3da1677
+1f6d12dd
+890684b
+)
+for i in {1..32767}
+do
+  num=`echo $i | md5sum | cut -c -8`
+  for n in ${mima[*]}
+   do
+    if [ "$num" == "$n"  ]
+     then
+      echo "$i match $n"
+      continue
+    fi
+  done
+done
+
+19 企业Shell面试题19：批量检查多个网站地址是否正常
+
+企业面试题：批量检查多个网站地址是否正常
+要求：
+1、使用shell数组方法实现，检测策略尽量模拟用户访问。
+2、每10秒钟做一次所有的检测，无法访问的输出报警。
+3、待检测的地址如下
+http://blog.oldboyedu.com
+http://blog.etiantian.org
+http://oldboy.blog.51cto.com
+http://10.0.0.7
+解答：
+
+方法一:
+#!/bin/sh
+################
+#Author:YuHongCong
+#604419314@qq.com
+################
+[ -f /etc/init.d/functions ] && . /etc/init.d/functions
+URLS=(
+http://www.etiantian.org
+http://www.taobao.com
+http://oldboy.blog.51cto.com
+http://10.0.0.70
+)
+CHECK_URL(){
+  wget -T 3 --spider --tries=2 $1 &>/dev/null
+  if [ $? -eq 0 ]
+  then
+    return 0
+  else
+    return 1
+  fi
+}
+
+MON_URL(){
+for url in ${URLS[*]}
+do
+  CHECK_URL $url
+  if [ $? -eq 0 ]
+  then
+    action "$url" /bin/true
+  else
+    action "$url" /bin/false
+  fi
+done
+}
+main(){
+while true
+do
+  MON_URL
+  sleep 10
+done
+}
+main
+
+方法二:
+#!/bin/sh
+################
+#Author:oldboy
+#31333741@qq.com
+################
+[ -f /etc/init.d/functions ] && . /etc/init.d/functions
+URLS=(
+http://www.etiantian.org
+http://www.taobao.com
+http://oldboy.blog.51cto.com
+http://10.0.0.70
+)
+LTIME(){
+echo -n "time;"
+for n in {1..10}
+do
+  if [ $n -eq 10 ]
+   then
+    echo "start"
+  else
+    echo -n .
+  fi
+  sleep 1
+done
+}
+CHECK_URL(){
+  wget -T 3 --spider --tries=2 $1 &>/dev/null
+  if [ $? -eq 0 ]
+  then
+    return 0
+  else
+    return 1
+  fi
+}
+MON_URL(){
+for url in ${URLS[*]}
+do
+  CHECK_URL $url
+  if [ $? -eq 0 ]
+  then
+    action "$url" /bin/true
+  else
+    action "$url" /bin/false
+  fi
+done
+}
+main(){
+while true
+do
+  LTIME
+  MON_URL
+  sleep 10
+done
+}
+main
+
+
+20 企业Shell面试题20：单词及字母去重排序案例
+
+用shell处理以下内容
+1、按单词出现频率降序排序！
+2、按字母出现频率降序排序！
+the squid project provides a number ofresources to assist users design,implement and support squid installations.Please browse the documentation and support sections for more infomation,byoldboy training.
+课堂实战考察某企业shell面试考试题
+http://oldboy.blog.51cto.com/2561410/1686891
+解答：
+
+#!/bin/sh
+str="the squid project provides a number of resources toassist users design,implement and support squid installations. Please browsethe documentation and support sections for more infomation"
+words(){
+echo $str|sed 's#[^a-zA-Z]# #g'|tr " " "\n"|grep -v "^$"|sort|uniq -c|sort -r -n
+}
+letters(){
+echo $str|grep -o "."|sort|egrep -v " |^$|[^a-zA-Z]"|uniq -c|sort -n -r
+}
+case $1 in
+words)
+  words
+  ;;
+letters)
+  letters
+  ;;
+*)
+  echo "usage:$0 {words|letters}"
+esac
+
+
+
+21 企业Shell面试题21：开发脚本管理服务端LVS案例
+
+请在LVS负载均衡主节点上，开发管理LVS服务的脚本ip_vs。
+实现：利用ipvsadm可以启动并配置好LVS服务，脚本形式：/etc/init.d/lvs{start|stop|restart}
+解答：
+#!/bin/bash
+if [ $UID -ne 0 ];then
+  echo "Permission denied (you must be root)"
+  exit 1
+fi
+[ -f /etc/init.d/functions ] && . /etc/init.d/functions
+vip_netmask=10.0.0.3/24
+vip=10.0.0.3
+service_addr=10.0.0.3:80
+rs=(
+10.0.0.7:80
+10.0.0.8:80
+)
+start() {
+    #add vip
+    ifconfig|grep $vip &>/dev/null
+    if [ $? -ne 0 ];then
+      ip addr add $vip_netmask dev eth0 label eth0:0 && \
+      action "add vip $vip_netmask" /bin/true
+    else
+      echo "vip $vip_netmask already exists."
+    fi
+    lvs_table=$(ipvsadm -ln|grep "$vip"|wc -l) 
+    if [ $lvs_table -eq 1 ];then
+      echo "virtual server already exists."
+    else
+      #add virtual server
+      ipvsadm -A -t $service_addr -s wrr && \
+      action "add virtual server $service_addr" /bin/true
+    fi
+    for ip in ${rs[@]};do
+      rs_num=$(ipvsadm -ln|grep "$ip"|wc -l)
+      if [ $rs_num -eq 1 ];then
+        echo "real server $ip already exists."
+      else
+        #add real server
+        ipvsadm -a -t $service_addr -r $ip -g -w 1 && \
+        action "add real server $ip" /bin/true
+      fi
+    done
+    #set tcp tcpfin udp connection timeout
+    ipvsadm --set 30 5 60 && \
+    action "set tcp tcpfin udp connection timeout values." /bin/true
+}
+stop() {
+    ifconfig|grep $vip &>/dev/null
+    if [ $? -ne 0 ];then
+      echo "without vip $vip"
+    else
+      #delete vip 
+      ip addr del $vip_netmask dev eth0 label eth0:0 && \
+      action "delete vip $vip_netmask." /bin/true
+    fi
+    lvs_table=$(ipvsadm -ln|grep "$vip"|wc -l)
+    for ip in ${rs[@]};do
+      rs_num=$(ipvsadm -ln|grep "$ip"|wc -l)
+      let lvs_table+=rs_num
+    done
+    if [ $lvs_table -ge 1 ];then
+      #clear all table
+      ipvsadm -C && \
+      action "clear all lvs table." /bin/true
+    else
+      echo "lvs table is empty."
+    fi
+}
+case "$1" in
+    start)
+    start
+    ;;
+    stop)
+    stop
+    ;;
+    restart)
+    stop
+    sleep 2
+    start
+    ;;
+    *)
+    echo "USAGE: $0 {start|stop|restart}"
+esac
+
+
+
+
+22 企业Shell面试题22：LVS节点健康检查及管理脚本案例
+
+请在LVS负载均衡主节点上，模拟keepalived健康检查功能管理LVS节点，
+当节点挂掉从服务器池中剔除，好了再加到服务器池中来。
+解答：
+
+#!/bin/bash
+vip=10.0.0.3
+rs_ip=(
+10.0.0.8
+10.0.0.7
+)
+remove_check() {
+  for rs in ${rs_ip[@]};do
+    ipvsadm -ln|grep $rs &>/dev/null
+    if [ $? -eq 0 ];then
+        rs_donw=0
+        a_group_down=0
+      for i in 1 2;do
+        rs_down=$(nmap -p 80 $rs|grep open|wc -l)
+        let a_group_down+=rs_down
+        sleep 2
+      done
+      if [ $a_group_down -eq 0 ];then
+        ipvsadm -d -t ${vip}:80 -r ${rs}:80
+      fi
+    fi
+  done
+}
+join_check() {
+  for rs in ${rs_ip[@]};do
+    ipvsadm -ln|grep $rs &>/dev/null
+    if [ $? -ne 0 ];then
+      a_group_up=0
+      rs_up=0
+      for j in 1 2;do
+        rs_up=$(nmap -p 80 $rs|grep open|wc -l)
+        let a_group_up+=rs_up
+        sleep 2
+      done
+      if [ $a_group_up -eq 2 ];then
+        ipvsadm -a -t ${vip}:80 -r ${rs}:80 -g -w 1
+      fi
+    fi
+  done
+}
+check_rs() {
+  while true;do
+  remove_check
+  sleep 1
+  join_check
+  sleep 1
+  done
+}
+check_rs
+
+
+23 企业Shell面试题23：LVS客户端配置脚本案例
+
+请在LVS客户端节点上，开发LVS客户端设置VIP以及抑制ARP的管理脚本
+实现：/etc/init.d/lvsclient{start|stop|restart}
+解答：
+#!/bin/bash
+#chkconfig: 2345 37 57
+#Write by Bevin 2016
+#LVS_Nginx
+export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/root/bin
+[ -f /etc/init.d/functions ] && source /etc/init.d/functions
+#Step 1
+function L_ipadd() {
+  VIPRES=`ip addr|grep 10.0.0.12|wc -l`
+  if [ $VIPRES -eq 0 ]
+    then
+      ip addr add 10.0.0.12/32 dev lo label lo:12
+      route add -host 10.0.0.12 dev lo
+      sleep 1
+      VIPRES=`ip addr|grep 10.0.0.12|wc -l`
+      if [ $VIPRES -eq 0 ]
+        then
+          ip addr add 10.0.0.12/32 dev lo label lo:12
+          route add -host 10.0.0.12 dev lo
+          sleep 1
+          VIPRES=`ip addr|grep 10.0.0.12|wc -l`
+          if [ $VIPRES -eq 0 ]
+            then
+              action "ip addr add 10.0.0.12/32 ..."   /bin/false
+              exit 1
+            else
+              action "ip addr add 10.0.0.12/32 ..."   /bin/true
+          fi
+        else
+          action "ip addr add 10.0.0.12/32 ..."   /bin/true
+      fi
+    else
+      action "ip addr add 10.0.0.12/32 is exist."
+  fi
+  echo "1" > /proc/sys/net/ipv4/conf/lo/arp_ignore
+  echo "2" > /proc/sys/net/ipv4/conf/lo/arp_announce
+  echo "1" > /proc/sys/net/ipv4/conf/all/arp_ignore
+  echo "2" > /proc/sys/net/ipv4/conf/all/arp_announce
+}
+function L_ipdel() {
+  VIPRES=`ip addr|grep 10.0.0.12|wc -l`
+  if [ $VIPRES -ne 0 ]
+    then
+      ip addr del 10.0.0.12/32 dev lo
+      route del -host 10.0.0.12 dev lo
+      sleep 1
+      VIPRES=`ip addr|grep 10.0.0.12|wc -l`
+      if [ $VIPRES -ne 0 ]
+        then
+          action "ip addr del 10.0.0.12/32 ..."  /bin/false
+          exit 1
+        else
+          action "ip addr del 10.0.0.12/32 ..."  /bin/true
+      fi
+    else
+          action "ip addr del 10.0.0.12/32 ..."   /bin/true
+  fi
+  echo "0" > /proc/sys/net/ipv4/conf/lo/arp_ignore
+  echo "0" > /proc/sys/net/ipv4/conf/lo/arp_announce
+  echo "0" > /proc/sys/net/ipv4/conf/all/arp_ignore
+  echo "0" > /proc/sys/net/ipv4/conf/all/arp_announce
+}
+#Step 2
+function L_exec() {
+  case "$1" in
+    start)
+      L_ipadd
+    ;;
+    stop)
+      L_ipdel
+    ;;
+    status)
+      VIPRES=`ip addr|grep 10.0.0.12|wc -l`
+      sleep 1
+      if [ $VIPRES -ne 0 ]
+        then
+          echo "LVS Nginx is working"
+        else
+          echo "LVS Nginx is not working"
+      fi
+    ;;
+    restart)
+      VIPRES=`ip addr|grep 10.0.0.12|wc -l`
+      if [ $VIPRES -ne 0 ]
+        then
+          L_ipdel
+          sleep 1
+          L_ipadd
+        else
+          echo  "ip 10.0.0.12 is not working"
+          sleep 1
+          L_ipadd
+      fi
+    ;;
+    *)
+      echo "USAGE: $0 {start|stop|restart|status}"
+  esac
+}
+
+24 企业Shell面试题24：模拟keepalved软件高可用案例
+
+    请在LVS服务端备用节点上，模拟keepalved vrrp功能，监听主节点，如果主节点不可访问则备节点启动并配置LVS实现接管主节点的资源提供服务（提醒：注意ARP缓存），提示此题要借助19.1.21的功能。
+解答：
+#!/bin/bash
+#Write by Bevin 2016
+export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/root/bin
+[ -f /etc/init.d/functions ] && source /etc/init.d/functions
+#Step 1 Instal ip_vs
+Ch_ipvs=`rpm -qa ipvsadm|wc -l`
+if [ $Ch_ipvs -eq 0 ]
+  then
+    yum install ipvsadm -y
+fi
+#Step 2 Functions
+VIP=10.0.0.12
+V_TAIL=12
+RIP=(
+9
+10
+)
+function L_LVS_VIP_RIP() {
+  VIPRES=`ip addr|grep $VIP|wc -l`
+  if [ $VIPRES -eq 0 ]
+    then
+      ip addr add $VIP/24 dev eth0 label eth0:$V_TAIL
+      ipvsadm -C
+      ipvsadm -A -t $VIP:80 -s rr
+      for n in ${RIP[*]}
+      do
+        ipvsadm -a -t $VIP:80 -r 10.0.0.$n:80 -g
+      done
+    else
+      ipvsadm -C
+      ipvsadm -A -t $VIP:80 -s rr
+      for n in ${RIP[*]}
+      do
+        ipvsadm -a -t $VIP:80 -r 10.0.0.$n:80 -g
+      done
+  fi
+}
+function L_check_vip() {
+  VIPRES=`ip addr|grep $VIP|wc -l`
+  if [ $VIPRES -eq 0 ]
+    then
+      L_LVS_VIP_RIP
+      sleep 5
+      if [ $VIPRES -eq 0 ]
+        then
+          L_LVS_VIP_RIP
+          sleep 5
+          if [ $VIPRES -eq 0 ]
+            then
+              echo "Warning: lb01: $VIP is down."|mail -s txbevin@sina.com
+              exit 1
+          fi
+      fi
+  fi
+  sleep 5
+}
+function L_check_rip() {
+  for n in ${RIP[*]}
+  do
+    CurlRes=`curl -I -s 10.0.0.$n|grep -E "200|301|302"|wc -l`
+    if [ $CurlRes -ne 0 ]
+      then
+        RS=`ipvsadm -Ln|grep 10.0.0.$n|wc -l`
+        if [ $RS -eq 0 ]
+          then
+            ipvsadm -a -t $VIP:80 -r 10.0.0.$n:80
+        fi
+      else
+        ipvsadm -d -t $VIP:80 -r 10.0.0.$n:80
+        mail -s "10.0.0.$n nginx is down at $(date +%F-%T)." txbevin@sina.com
+        continue
+    fi
+  done
+  sleep 5
+}
+#Step 3
+L_LVS_VIP_RIP
+while true
+do
+  L_check_vip
+  sleep 1
+  L_check_rip
+  sleep 1
+done
+
+
+
+25 企业Shell面试题25：编写正（或长）方形图形案例
+
+请用shell或Python编写一个正（或长）方形，接收用户输入的数字。
+解答：
+#!/bin/bash
+a=$1
+((b= $a + $a))
+for ((i=1;i<=a;i++))
+do
+  for ((j=1;j<=b;j++))
+  do
+    echo -n "＋"
+  done
+  echo "＋"
+done
+echo ""
+
+
+冒泡排序
+#!/bin/sh
+#sorting following array
+echo "please input a number list:"
+read -a arr
+
+for (( i=0 ; i<${#arr[@]} ; i++ ))
+do
+  for (( j=${#arr[@]} - 1 ; j>i ; j-- ))
+  do
+    #echo $j
+    if  [[ ${arr[j]} -lt ${arr[j-1]} ]]
+    then
+       t=${arr[j]}
+       arr[j]=${arr[j-1]}
+       arr[j-1]=$t
+    fi
+  done
+done
+echo "after sorting:"
+echo ${arr[@]}
+
+求平均数
+
+#!/bin/bash
+SCORE=0
+AVERAGE=0
+SUM=0
+NUM=0
+
+while true;
+do
+  echo -n "Enter you score [0-100] ('q' for quit): "; read SCORE;
+  if [[ $SCORE -lt 0 ]] || [[ $SCORE -ge 100 ]]
+  then
+  echo "The num is error,The format is 0-100"
+  elif [[ $SCORE == q ]]
+  then
+  break    
+  else
+       SUM=$[$SUM + $SCORE]
+       NUM=$[$NUM + 1]
+      AVERAGE=$[$SUM / $NUM]
+      echo $SUM--$NUM--$AVERAGE
+  fi
+done
+
+
+
+
+
